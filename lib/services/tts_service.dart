@@ -26,7 +26,7 @@ class TtsService extends ChangeNotifier {
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(1.0);
 
-    if (Platform.isIOS) {
+    if (!kIsWeb && Platform.isIOS) {
       await _flutterTts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback, [
         IosTextToSpeechAudioCategoryOptions.allowBluetooth,
         IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
