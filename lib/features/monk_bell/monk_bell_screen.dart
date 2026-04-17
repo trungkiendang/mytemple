@@ -23,6 +23,7 @@ class _MonkBellScreenState extends State<MonkBellScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
+      backgroundColor: AppTheme.parchment,
       appBar: AppBar(
         title: const Text('Gõ Mõ'),
         centerTitle: true,
@@ -43,56 +44,45 @@ class _MonkBellScreenState extends State<MonkBellScreen>
         builder: (context, provider, child) {
           return Stack(
             children: [
-              // 3D Model
-              GestureDetector(
-                onTap: () {
-                  provider.tap();
-                  // Trigger a small animation
-                  _controller.cameraTarget(0, 0.1, 0);
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    _controller.cameraTarget(0, 0, 0);
-                  });
-                },
-                child: O3D(
-                  controller: _controller,
-                  src: 'assets/models/mo.glb',
-                  autoPlay: true,
-                  autoRotate: false,
-                  cameraControls: true,
-                  backgroundColor: AppTheme.parchment,
+              // 3D Model Area - Full screen height minus header/footer
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    provider.tap();
+                    // Basic haptic or animation if needed
+                  },
+                  child: O3D(
+                    controller: _controller,
+                    src: 'assets/models/mo.glb',
+                    autoPlay: true,
+                    autoRotate: true,
+ // Make it rotate so users know it's 3D
+                    cameraControls: true,
+                    backgroundColor: Colors.transparent,
+                    loading: Loading.eager, // Load immediately
+                  ),
                 ),
               ),
 
-              // Stats Overlay
-              Positioned(
-                top: 20,
-                left: 20,
-                right: 20,
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 800),
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, (1 - value) * -20),
-                        child: child,
-                      ),
-                    );
-                  },
+              // Stats Overlay - Moved slightly to avoid 3D model interaction issues
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 20.0),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
-                          color: AppTheme.woodBrown.withOpacity(0.9),
+                          color: AppTheme.darkWood.withOpacity(0.85),
                           borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black26,
                               blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
@@ -101,9 +91,9 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                             Text(
                               '${provider.tapCount}',
                               style: const TextStyle(
-                                fontSize: 32,
+                                fontSize: 36,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: AppTheme.gold,
                               ),
                             ),
                             const Text(
@@ -111,6 +101,7 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.white70,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -120,17 +111,15 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildSmallBadge(
-                            icon: Icons.public,
+                          _buildBadge(
                             label: 'Toàn cầu: ${provider.globalTapCount}',
-                            color: AppTheme.forestGreen,
+                            icon: Icons.public,
                           ),
-                          const SizedBox(width: 8),
-                          _buildSmallBadge(
-                            icon: Icons.circle,
+                          const SizedBox(width: 10),
+                          _buildBadge(
                             label: '${provider.onlineUsersCount} online',
-                            color: Colors.green,
-                            showDot: true,
+                            icon: Icons.circle,
+                            iconColor: Colors.greenAccent,
                           ),
                         ],
                       ),
@@ -139,25 +128,23 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                 ),
               ),
 
-              // Instructions
+              // Help Text
               Positioned(
-                bottom: 40,
+                bottom: 30,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
-                      'Chạm vào mõ để tích công đức',
+                      'Chạm vào mõ để tụng kinh',
                       style: TextStyle(
-                        fontSize: 16,
                         color: AppTheme.darkWood,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -170,40 +157,24 @@ class _MonkBellScreenState extends State<MonkBellScreen>
     );
   }
 
-  Widget _buildSmallBadge({
-    required IconData icon,
-    required String label,
-    required Color color,
-    bool showDot = false,
-  }) {
+  Widget _buildBadge({required String label, required IconData icon, Color iconColor = AppTheme.gold}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppTheme.darkWood.withOpacity(0.1)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            showDot ? Icons.circle : icon,
-            color: color,
-            size: showDot ? 8 : 14,
-          ),
-          const SizedBox(width: 6),
+          Icon(icon, size: 12, color: iconColor),
+          const SizedBox(width: 5),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.darkWood.withOpacity(0.8),
+            style: const TextStyle(
+              fontSize: 11,
               fontWeight: FontWeight.bold,
+              color: AppTheme.darkWood,
             ),
           ),
         ],

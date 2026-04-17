@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_haptic/flutter_haptic.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Sử dụng HapticFeedback có sẵn của Flutter
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class MonkBellProvider with ChangeNotifier {
   int _tapCount = 0;
@@ -14,78 +16,61 @@ class MonkBellProvider with ChangeNotifier {
   int get onlineUsersCount => _onlineUsersCount;
   
   final player = AudioPlayer();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FirebaseFirestore? _firestore;
 
   MonkBellProvider() {
-    _listenToGlobalStats();
+    _initFirebase();
+  }
+
+  void _initFirebase() {
+    if (Firebase.apps.isNotEmpty) {
+      _firestore = FirebaseFirestore.instance;
+      _listenToGlobalStats();
+    }
   }
 
   void _listenToGlobalStats() {
-    // Listen to global taps
-    _firestore.collection('stats').doc('global_taps').snapshots().listen((snapshot) {
-      if (snapshot.exists) {
-        _globalTapCount = snapshot.data()?['count'] ?? 0;
-        notifyListeners();
-      }
-    }, onError: (e) {
-      debugPrint('Error listening to global taps: $e');
-      // Mock data for prototype if Firebase is not fully setup
-      _globalTapCount = 12345;
-      notifyListeners();
-    });
+    if (_firestore == null) return;
 
-    // Listen to online users
-    _firestore.collection('stats').doc('online_users').snapshots().listen((snapshot) {
+    _firestore!.collection('stats').doc('global_stats').snapshots().listen((snapshot) {
       if (snapshot.exists) {
-        _onlineUsersCount = snapshot.data()?['count'] ?? 0;
+        final data = snapshot.data();
+        _globalTapCount = data?['total_taps'] ?? 0;
+        _onlineUsersCount = data?['online_users'] ?? 1;
         notifyListeners();
       }
-    }, onError: (e) {
-      debugPrint('Error listening to online users: $e');
-      // Mock data for prototype
-      _onlineUsersCount = 42;
-      notifyListeners();
-    });
+    }, onError: (e) => debugPrint('Error stats: $e'));
   }
 
   void tap() async {
     _tapCount++;
-    _globalTapCount++;
     notifyListeners();
     
-    // Sync with Firestore
-    _syncTapWithFirestore();
-
-    // Play sound and haptic
+    // Play sound
     try {
       await player.play(AssetSource('audio/bell_sound.mp3'));
-    } catch (e) {
-      debugPrint('Error playing sound: $e');
-    }
-    
+    } catch (_) {}
+
+    // Haptic Feedback (Chạy tốt cả trên iOS/Android/Web nếu trình duyệt hỗ trợ)
     try {
-      await FlutterHaptic.hapticTick();
-    } catch (e) {
-      debugPrint('Error triggering haptic: $e');
-    }
+      HapticFeedback.lightImpact();
+    } catch (_) {}
+
+    _syncTap();
   }
 
-  void _syncTapWithFirestore() {
-    _firestore.collection('stats').doc('global_taps').set({
-      'count': FieldValue.increment(1),
-    }, SetOptions(merge: true)).catchError((e) {
-      debugPrint('Error syncing tap with Firestore: $e');
-    });
+  void _syncTap() {
+    if (_firestore == null) return;
+
+    _firestore!.collection('stats').doc('global_stats').update({
+      'total_taps': FieldValue.increment(1)
+    }).catchError((_) {});
     
-    // Also update user's personal tap count for leaderboard
-    // For prototype, we'll use a hardcoded user ID or skip if not authenticated
-    _firestore.collection('users').doc('prototype_user').set({
-      'displayName': 'Prototype User',
+    _firestore!.collection('users').doc('prototype_user').set({
+      'displayName': 'Người dùng hữu duyên',
       'tapCount': FieldValue.increment(1),
-      'lastTap': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true)).catchError((e) {
-      debugPrint('Error updating user tap count: $e');
-    });
+      'lastActive': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true)).catchError((_) {});
   }
 
   @override

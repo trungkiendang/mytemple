@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lunar/lunar.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/app_theme.dart';
+import '../../models/calendar_event.dart';
+import 'event_provider.dart';
 
 class LunarCalendarScreen extends StatefulWidget {
   const LunarCalendarScreen({super.key});
@@ -40,6 +44,150 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
       _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
       _updateMonthData();
     });
+  }
+
+  void _showEventBottomSheet(DateTime date) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer<EventProvider>(
+          builder: (context, eventProvider, child) {
+            final events = eventProvider.getEventsForDate(date);
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Sự kiện ngày ${DateFormat('dd/MM/yyyy').format(date)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.darkWood,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle, color: AppTheme.woodBrown),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showAddEventDialog(date);
+                        },
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  if (events.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Center(
+                        child: Text(
+                          'Không có sự kiện nào',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: events.length,
+                        itemBuilder: (context, index) {
+                          final event = events[index];
+                          return ListTile(
+                            leading: Icon(
+                              event.isLunar ? Icons.brightness_2 : Icons.calendar_today,
+                              color: AppTheme.woodBrown,
+                            ),
+                            title: Text(event.title),
+                            subtitle: Text(event.isLunar ? 'Lịch Âm' : 'Lịch Dương'),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              onPressed: () => eventProvider.deleteEvent(event.id),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddEventDialog(DateTime date) {
+    final titleController = TextEditingController();
+    bool isLunar = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Thêm sự kiện'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tiêu đề sự kiện',
+                      hintText: 'Ví dụ: Giỗ ông nội',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('Sử dụng lịch âm'),
+                    value: isLunar,
+                    onChanged: (value) {
+                      setState(() {
+                        isLunar = value;
+                      });
+                    },
+                    activeColor: AppTheme.woodBrown,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (titleController.text.isNotEmpty) {
+                      final event = CalendarEvent(
+                        id: const Uuid().v4(),
+                        title: titleController.text,
+                        date: date,
+                        isLunar: isLunar,
+                      );
+                      context.read<EventProvider>().addEvent(event);
+                      Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.woodBrown,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Lưu'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -127,78 +275,106 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
     int offset = _firstWeekdayOfMonth - 1;
     int totalCells = ((_daysInMonth + offset) / 7).ceil() * 7;
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(12.0),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 7,
-        childAspectRatio: 0.75,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemCount: totalCells,
-      itemBuilder: (context, index) {
-        int day = index - offset + 1;
-        if (day < 1 || day > _daysInMonth) {
-          return const SizedBox.shrink();
-        }
-
-        DateTime date = DateTime(_focusedDay.year, _focusedDay.month, day);
-        Solar solar = Solar.fromDate(date);
-        Lunar lunar = solar.getLunar();
-
-        bool isToday = date.year == DateTime.now().year &&
-            date.month == DateTime.now().month &&
-            date.day == DateTime.now().day;
-
-        bool isSpecialDay = lunar.getDay() == 1 || lunar.getDay() == 15;
-
-        return Container(
-          decoration: BoxDecoration(
-            color: isToday ? AppTheme.woodBrown : Colors.white,
-            borderRadius: BorderRadius.circular(12.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: isSpecialDay
-                ? Border.all(color: Colors.orange.withOpacity(0.5), width: 1.5)
-                : null,
+    return Consumer<EventProvider>(
+      builder: (context, eventProvider, child) {
+        return GridView.builder(
+          padding: const EdgeInsets.all(12.0),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            childAspectRatio: 0.75,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                day.toString(),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isToday ? Colors.white : AppTheme.darkWood,
+          itemCount: totalCells,
+          itemBuilder: (context, index) {
+            int day = index - offset + 1;
+            if (day < 1 || day > _daysInMonth) {
+              return const SizedBox.shrink();
+            }
+
+            DateTime date = DateTime(_focusedDay.year, _focusedDay.month, day);
+            Solar solar = Solar.fromDate(date);
+            Lunar lunar = solar.getLunar();
+
+            bool isToday = date.year == DateTime.now().year &&
+                date.month == DateTime.now().month &&
+                date.day == DateTime.now().day;
+
+            bool isSpecialDay = lunar.getDay() == 1 || lunar.getDay() == 15;
+            bool hasEvents = eventProvider.getEventsForDate(date).isNotEmpty;
+
+            return GestureDetector(
+              onTap: () => _showEventBottomSheet(date),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isToday ? AppTheme.woodBrown : Colors.white,
+                  borderRadius: BorderRadius.circular(12.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                  border: isSpecialDay
+                      ? Border.all(color: Colors.orange.withOpacity(0.5), width: 1.5)
+                      : (hasEvents
+                          ? Border.all(color: AppTheme.woodBrown.withOpacity(0.3), width: 1)
+                          : null),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          day.toString(),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isToday ? Colors.white : AppTheme.darkWood,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${lunar.getDay()}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSpecialDay ? FontWeight.bold : FontWeight.normal,
+                            color: isToday
+                                ? Colors.white70
+                                : (isSpecialDay ? Colors.orange.shade700 : Colors.grey),
+                          ),
+                        ),
+                        if (lunar.getDay() == 1)
+                          Text(
+                            'Tháng ${lunar.getMonth()}',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: isToday ? Colors.white60 : Colors.orange.shade700,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (hasEvents)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                '${lunar.getDay()}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSpecialDay ? FontWeight.bold : FontWeight.normal,
-                  color: isToday
-                      ? Colors.white70
-                      : (isSpecialDay ? Colors.orange.shade700 : Colors.grey),
-                ),
-              ),
-              if (lunar.getDay() == 1)
-                Text(
-                  'Tháng ${lunar.getMonth()}',
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: isToday ? Colors.white60 : Colors.orange.shade700,
-                  ),
-                ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -211,7 +387,9 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildLegendItem(Colors.orange, 'Ngày Rằm/Mồng 1'),
-          const SizedBox(width: 20),
+          const SizedBox(width: 12),
+          _buildLegendItem(Colors.red, 'Sự kiện'),
+          const SizedBox(width: 12),
           _buildLegendItem(AppTheme.woodBrown, 'Hôm nay'),
         ],
       ),

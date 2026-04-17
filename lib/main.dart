@@ -12,6 +12,7 @@ import 'features/monk_bell/monk_bell_screen.dart';
 import 'features/scriptures/scripture_list_screen.dart';
 import 'features/incense/incense_provider.dart';
 import 'features/incense/incense_screen.dart';
+import 'features/calendar/event_provider.dart';
 import 'features/calendar/lunar_calendar_screen.dart';
 import 'features/profile/profile_screen.dart';
 
@@ -55,6 +56,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => MonkBellProvider()),
         ChangeNotifierProvider(create: (_) => IncenseProvider()),
+        ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => TtsService()),
       ],
       child: MaterialApp(

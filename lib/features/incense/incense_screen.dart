@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
 import 'incense_provider.dart';
+import '../monk_bell/monk_bell_provider.dart';
 import '../../core/app_theme.dart';
 
 class IncenseScreen extends StatefulWidget {

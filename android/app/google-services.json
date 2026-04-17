@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "609068144093",
+    "firebase_url": "https://temple-a6cf8-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "temple-a6cf8",
+    "storage_bucket": "temple-a6cf8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:609068144093:android:0d3112e59811078be99234",
+        "android_client_info": {
+          "package_name": "com.kun.temple"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "609068144093-f81qpue01121a85beak60ku5jt9k59hl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGADQctKQN4tCtb2TydkU4w50tx_Lu31A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "609068144093-f81qpue01121a85beak60ku5jt9k59hl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "609068144093-kpkunlgraogpbkugrbgq1qvohv3l8ibl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.kun.temple"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
