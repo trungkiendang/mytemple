@@ -12,20 +12,26 @@ class FirebaseService {
     }
   }
 
-  Future<List<Scripture>> fetchScripturesFromFirebase() async {
+  Future<List<Scripture>> fetchScripturesFromFirebase({String? sect}) async {
     if (_firestore == null) {
       debugPrint('Firestore not available, returning mock data');
       return _getMockScriptures();
     }
 
     try {
-      QuerySnapshot snapshot = await _firestore!.collection('scriptures').get();
+      Query query = _firestore!.collection('scriptures');
+      if (sect != null && sect.isNotEmpty) {
+        query = query.where('sect', isEqualTo: sect);
+      }
+
+      QuerySnapshot snapshot = await query.get();
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return Scripture(
           id: doc.id,
           title: data['title'] ?? 'Không tiêu đề',
           content: data['content'] ?? 'Không nội dung',
+          sect: data['sect'],
         );
       }).toList();
     } catch (e) {

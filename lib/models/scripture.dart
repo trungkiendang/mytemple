@@ -10,6 +10,13 @@ class Scripture extends HiveObject {
   final String title;
   @HiveField(2)
   final String content;
+  @HiveField(3)
+  final String? sect;
 
-  Scripture({required this.id, required this.title, required this.content});
+  Scripture({
+    required this.id,
+    required this.title,
+    required this.content,
+    this.sect,
+  });
 }
