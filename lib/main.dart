@@ -11,6 +11,7 @@ import 'features/scriptures/scripture_list_screen.dart';
 import 'features/incense/incense_provider.dart';
 import 'features/incense/incense_screen.dart';
 import 'features/calendar/lunar_calendar_screen.dart';
+import 'features/profile/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,6 +73,7 @@ class _MainScreenState extends State<MainScreen> {
     ScriptureListScreen(),
     IncenseScreen(),
     LunarCalendarScreen(),
+    ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -83,25 +85,41 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: AppTheme.woodBrown,
+        unselectedItemColor: AppTheme.darkWood.withOpacity(0.5),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
+            icon: Icon(Icons.notifications_outlined),
+            activeIcon: Icon(Icons.notifications),
             label: 'Mõ',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.library_books),
+            icon: Icon(Icons.library_books_outlined),
+            activeIcon: Icon(Icons.library_books),
             label: 'Kinh',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.fireplace),
+            icon: Icon(Icons.fireplace_outlined),
+            activeIcon: Icon(Icons.fireplace),
             label: 'Hương',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
+            icon: Icon(Icons.calendar_month_outlined),
+            activeIcon: Icon(Icons.calendar_month),
             label: 'Lịch',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Cá nhân',
           ),
         ],
         currentIndex: _selectedIndex,

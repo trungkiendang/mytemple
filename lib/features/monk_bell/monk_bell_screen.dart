@@ -12,23 +12,28 @@ class MonkBellScreen extends StatefulWidget {
   State<MonkBellScreen> createState() => _MonkBellScreenState();
 }
 
-class _MonkBellScreenState extends State<MonkBellScreen> {
+class _MonkBellScreenState extends State<MonkBellScreen>
+    with AutomaticKeepAliveClientMixin {
   final O3DController _controller = O3DController();
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Monk Bell (Mõ)'),
-        backgroundColor: AppTheme.darkWood,
-        foregroundColor: Colors.white,
+        title: const Text('Gõ Mõ'),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.leaderboard),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const LeaderboardScreen()),
               );
             },
           ),
@@ -42,7 +47,7 @@ class _MonkBellScreenState extends State<MonkBellScreen> {
               GestureDetector(
                 onTap: () {
                   provider.tap();
-                  // Trigger a small animation if possible
+                  // Trigger a small animation
                   _controller.cameraTarget(0, 0.1, 0);
                   Future.delayed(const Duration(milliseconds: 100), () {
                     _controller.cameraTarget(0, 0, 0);
@@ -54,81 +59,106 @@ class _MonkBellScreenState extends State<MonkBellScreen> {
                   autoPlay: true,
                   autoRotate: false,
                   cameraControls: true,
+                  backgroundColor: AppTheme.parchment,
                 ),
               ),
-              
+
               // Stats Overlay
               Positioned(
                 top: 20,
                 left: 20,
                 right: 20,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.woodBrown.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(30),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 800),
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, (1 - value) * -20),
+                        child: child,
                       ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Taps: ${provider.tapCount}',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.woodBrown.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Global: ${provider.globalTapCount}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.9),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '${provider.tapCount}',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        ],
+                            const Text(
+                              'Lượt gõ của bạn',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                          _buildSmallBadge(
+                            icon: Icons.public,
+                            label: 'Toàn cầu: ${provider.globalTapCount}',
+                            color: AppTheme.forestGreen,
+                          ),
                           const SizedBox(width: 8),
-                          Text(
-                            '${provider.onlineUsersCount} online',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          _buildSmallBadge(
+                            icon: Icons.circle,
+                            label: '${provider.onlineUsersCount} online',
+                            color: Colors.green,
+                            showDot: true,
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              
+
               // Instructions
-              const Positioned(
+              Positioned(
                 bottom: 40,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Text(
-                    'Tap the bell to pray',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppTheme.darkWood,
-                      fontStyle: FontStyle.italic,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Chạm vào mõ để tích công đức',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.darkWood,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
@@ -136,6 +166,47 @@ class _MonkBellScreenState extends State<MonkBellScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSmallBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+    bool showDot = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            showDot ? Icons.circle : icon,
+            color: color,
+            size: showDot ? 8 : 14,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.darkWood.withOpacity(0.8),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

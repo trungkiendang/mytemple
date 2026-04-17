@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lunar/lunar.dart';
 import 'package:intl/intl.dart';
+import '../../core/app_theme.dart';
 
 class LunarCalendarScreen extends StatefulWidget {
   const LunarCalendarScreen({super.key});
@@ -55,6 +56,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
           Expanded(
             child: _buildCalendarGrid(),
           ),
+          _buildLegend(),
         ],
       ),
     );
@@ -62,20 +64,35 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left),
+            icon: const Icon(Icons.chevron_left, color: AppTheme.woodBrown),
             onPressed: _previousMonth,
           ),
-          Text(
-            DateFormat('MMMM yyyy', 'vi_VN').format(_focusedDay),
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Column(
+            children: [
+              Text(
+                DateFormat('MMMM', 'vi_VN').format(_focusedDay).toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.darkWood,
+                ),
+              ),
+              Text(
+                DateFormat('yyyy').format(_focusedDay),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.darkWood.withOpacity(0.6),
+                ),
+              ),
+            ],
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right),
+            icon: const Icon(Icons.chevron_right, color: AppTheme.woodBrown),
             onPressed: _nextMonth,
           ),
         ],
@@ -85,30 +102,38 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
 
   Widget _buildWeekdayLabels() {
     final weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    return Row(
-      children: weekdays
-          .map((label) => Expanded(
-                child: Center(
-                  child: Text(
-                    label,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      color: AppTheme.woodBrown.withOpacity(0.05),
+      child: Row(
+        children: weekdays
+            .map((label) => Expanded(
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.woodBrown,
+                      ),
+                    ),
                   ),
-                ),
-              ))
-          .toList(),
+                ))
+            .toList(),
+      ),
     );
   }
 
   Widget _buildCalendarGrid() {
-    // Adjust for Monday start (weekday 1 is Monday, 7 is Sunday)
     int offset = _firstWeekdayOfMonth - 1;
     int totalCells = ((_daysInMonth + offset) / 7).ceil() * 7;
 
     return GridView.builder(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(12.0),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.75,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
       ),
       itemCount: totalCells,
       itemBuilder: (context, index) {
@@ -125,12 +150,22 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
             date.month == DateTime.now().month &&
             date.day == DateTime.now().day;
 
+        bool isSpecialDay = lunar.getDay() == 1 || lunar.getDay() == 15;
+
         return Container(
-          margin: const EdgeInsets.all(2.0),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8.0),
-            color: isToday ? Colors.orange.shade100 : null,
+            color: isToday ? AppTheme.woodBrown : Colors.white,
+            borderRadius: BorderRadius.circular(12.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: isSpecialDay
+                ? Border.all(color: Colors.orange.withOpacity(0.5), width: 1.5)
+                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -140,21 +175,66 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: isToday ? Colors.orange : Colors.black,
+                  color: isToday ? Colors.white : AppTheme.darkWood,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                '${lunar.getDay()}/${lunar.getMonth()}',
+                '${lunar.getDay()}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  fontWeight: isSpecialDay ? FontWeight.bold : FontWeight.normal,
+                  color: isToday
+                      ? Colors.white70
+                      : (isSpecialDay ? Colors.orange.shade700 : Colors.grey),
                 ),
               ),
+              if (lunar.getDay() == 1)
+                Text(
+                  'Tháng ${lunar.getMonth()}',
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: isToday ? Colors.white60 : Colors.orange.shade700,
+                  ),
+                ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLegend() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildLegendItem(Colors.orange, 'Ngày Rằm/Mồng 1'),
+          const SizedBox(width: 20),
+          _buildLegendItem(AppTheme.woodBrown, 'Hôm nay'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppTheme.darkWood),
+        ),
+      ],
     );
   }
 }
