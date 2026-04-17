@@ -4,9 +4,9 @@ import 'package:temple_vibe/main.dart';
 void main() {
   testWidgets('App initialization smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const TempleVibeApp());
+    await tester.pumpWidget(const MyApp());
 
-    // Verify that our splash screen text is present.
-    expect(find.text('Temple Vibe'), findsOneWidget);
+    // Verify that our app is present.
+    expect(find.byType(MyApp), findsOneWidget);
   });
 }

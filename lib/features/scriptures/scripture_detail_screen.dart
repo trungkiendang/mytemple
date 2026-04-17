@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/scripture.dart';
+import '../../services/tts_service.dart';
 
 class ScriptureDetailScreen extends StatefulWidget {
   final Scripture scripture;
@@ -16,6 +18,7 @@ class _ScriptureDetailScreenState extends State<ScriptureDetailScreen> {
   Timer? _timer;
   bool _isAutoScrolling = false;
   double _scrollSpeed = 1.0;
+  bool _isTtsActive = false;
 
   void _toggleAutoScroll() {
     setState(() {
@@ -46,10 +49,23 @@ class _ScriptureDetailScreenState extends State<ScriptureDetailScreen> {
     });
   }
 
+  void _toggleTts() {
+    setState(() {
+      _isTtsActive = !_isTtsActive;
+      if (!_isTtsActive) {
+        Provider.of<TtsService>(context, listen: false).stop();
+      }
+    });
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
     _scrollController.dispose();
+    // Stop TTS when navigating away
+    if (mounted) {
+      Provider.of<TtsService>(context, listen: false).stop();
+    }
     super.dispose();
   }
 
@@ -59,6 +75,10 @@ class _ScriptureDetailScreenState extends State<ScriptureDetailScreen> {
       appBar: AppBar(
         title: Text(widget.scripture.title),
         actions: [
+          IconButton(
+            icon: Icon(_isTtsActive ? Icons.volume_up : Icons.volume_off),
+            onPressed: _toggleTts,
+          ),
           IconButton(
             icon: Icon(_isAutoScrolling ? Icons.pause : Icons.play_arrow),
             onPressed: _toggleAutoScroll,
@@ -75,6 +95,7 @@ class _ScriptureDetailScreenState extends State<ScriptureDetailScreen> {
           ),
         ),
       ),
+      bottomSheet: _isTtsActive ? _buildTtsControlPanel() : null,
       floatingActionButton: _isAutoScrolling
           ? Column(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -103,6 +124,68 @@ class _ScriptureDetailScreenState extends State<ScriptureDetailScreen> {
               ],
             )
           : null,
+    );
+  }
+
+  Widget _buildTtsControlPanel() {
+    return Consumer<TtsService>(
+      builder: (context, ttsService, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.stop),
+                    onPressed: () => ttsService.stop(),
+                  ),
+                  IconButton(
+                    icon: Icon(ttsService.isPlaying ? Icons.pause : Icons.play_arrow),
+                    onPressed: () {
+                      if (ttsService.isPlaying) {
+                        ttsService.pause();
+                      } else {
+                        ttsService.speak(widget.scripture.content);
+                      }
+                    },
+                  ),
+                  DropdownButton<double>(
+                    value: ttsService.rate,
+                    items: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5].map((double value) {
+                      return DropdownMenuItem<double>(
+                        value: value,
+                        child: Text('${value}x'),
+                      );
+                    }).toList(),
+                    onChanged: (double? newValue) {
+                      if (newValue != null) {
+                        ttsService.setRate(newValue);
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: _toggleTts,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
