@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="temple_vibe"
+        android:label="My Chùa"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

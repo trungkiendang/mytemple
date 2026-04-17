@@ -50,7 +50,7 @@ class TempleVibeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Temple Vibe',
+      title: 'My Chùa',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
       home: const MainScreen(),
@@ -146,7 +146,7 @@ class SplashScreen extends StatelessWidget {
             ),
             SizedBox(height: 20),
             Text(
-              'Temple Vibe',
+              'My Chùa',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
