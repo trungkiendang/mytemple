@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
 import 'incense_provider.dart';
+import '../monk_bell/monk_bell_provider.dart';
 
 class IncenseScreen extends StatefulWidget {
   const IncenseScreen({super.key});
@@ -16,10 +17,41 @@ class _IncenseScreenState extends State<IncenseScreen> {
   @override
   Widget build(BuildContext context) {
     final incenseProvider = Provider.of<IncenseProvider>(context);
+    final monkBellProvider = Provider.of<MonkBellProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Thắp hương'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.withOpacity(0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.circle, color: Colors.green, size: 8),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${monkBellProvider.onlineUsersCount} online',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
