@@ -6,6 +6,8 @@ import 'services/hive_service.dart';
 import 'features/monk_bell/monk_bell_provider.dart';
 import 'features/monk_bell/monk_bell_screen.dart';
 import 'features/scriptures/scripture_list_screen.dart';
+import 'features/incense/incense_provider.dart';
+import 'features/incense/incense_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MonkBellProvider()),
+        ChangeNotifierProvider(create: (_) => IncenseProvider()),
       ],
       child: const TempleVibeApp(),
     ),
@@ -58,6 +61,7 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _screens = [
     MonkBellScreen(),
     ScriptureListScreen(),
+    IncenseScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -74,11 +78,15 @@ class _MainScreenState extends State<MainScreen> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),
-            label: 'Monk Bell',
+            label: 'Mõ',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.library_books),
-            label: 'Scriptures',
+            label: 'Kinh',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fireplace),
+            label: 'Hương',
           ),
         ],
         currentIndex: _selectedIndex,
