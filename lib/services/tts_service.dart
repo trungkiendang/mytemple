@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
 
@@ -24,6 +25,15 @@ class TtsService extends ChangeNotifier {
     await _flutterTts.setSpeechRate(_rate);
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(1.0);
+
+    if (Platform.isIOS) {
+      await _flutterTts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback, [
+        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+        IosTextToSpeechAudioCategoryOptions.defaultToSpeaker
+      ]);
+    }
 
     _flutterTts.setStartHandler(() {
       _ttsState = TtsState.playing;
