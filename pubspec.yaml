@@ -42,6 +42,9 @@ dependencies:
   path_provider: ^2.1.3
   audioplayers: ^6.0.0
   flutter_haptic: 0.0.3
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
+  lunar: ^1.7.8
 
 dev_dependencies:
   flutter_test:

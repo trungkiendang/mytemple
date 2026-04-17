@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_theme.dart';
 import 'services/hive_service.dart';
+import 'services/notification_service.dart';
 import 'features/monk_bell/monk_bell_provider.dart';
 import 'features/monk_bell/monk_bell_screen.dart';
 import 'features/scriptures/scripture_list_screen.dart';
 import 'features/incense/incense_provider.dart';
 import 'features/incense/incense_screen.dart';
+import 'features/calendar/lunar_calendar_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Localization
+  await initializeDateFormatting('vi_VN', null);
+
   // Initialize Hive
   await HiveService.init();
   
+  // Initialize Notifications
+  await NotificationService().init();
+
   // Firebase initialization placeholder
   // Note: Requires platform-specific configuration files to work properly
   try {
@@ -62,6 +71,7 @@ class _MainScreenState extends State<MainScreen> {
     MonkBellScreen(),
     ScriptureListScreen(),
     IncenseScreen(),
+    LunarCalendarScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -75,6 +85,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),
@@ -87,6 +98,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.fireplace),
             label: 'Hương',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month),
+            label: 'Lịch',
           ),
         ],
         currentIndex: _selectedIndex,
