@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_theme.dart';
@@ -25,13 +26,12 @@ void main() async {
 
   try {
     if (kIsWeb) {
-      // Firebase Web requires options. 
-      // Replace with your real keys from Firebase Console for web if needed.
+      // Cấu hình dựa trên thông tin thật từ GoogleService-Info.plist của bạn
       await Firebase.initializeApp(
         options: const FirebaseOptions(
-          apiKey: "AIzaSyDummyKey",
-          appId: "1:dummy:web:dummy",
-          messagingSenderId: "dummy",
+          apiKey: "AIzaSyB3QlRiiVFwixubt2cAzlUsmIV9q1qVzW0",
+          appId: "1:609068144093:web:dummy", // Web ID sẽ cần cập nhật từ Console nếu chạy Web thật
+          messagingSenderId: "609068144093",
           projectId: "temple-a6cf8",
           storageBucket: "temple-a6cf8.appspot.com",
         ),
@@ -39,9 +39,12 @@ void main() async {
     } else {
       await Firebase.initializeApp();
     }
-    debugPrint('Firebase initialized');
+    
+    // Tự động đăng nhập ẩn danh để vượt qua Rules của Firestore
+    await FirebaseAuth.instance.signInAnonymously();
+    debugPrint('Firebase & Auth initialized successfully');
   } catch (e) {
-    debugPrint('Firebase init error: $e');
+    debugPrint('Firebase init/auth error: $e');
   }
 
   runApp(const MyApp());

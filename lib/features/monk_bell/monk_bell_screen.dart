@@ -44,27 +44,30 @@ class _MonkBellScreenState extends State<MonkBellScreen>
         builder: (context, provider, child) {
           return Stack(
             children: [
-              // 3D Model Area - Full screen height minus header/footer
+              // 3D Model Area - INTERACTIVE
               Positioned.fill(
                 child: GestureDetector(
                   onTap: () {
                     provider.tap();
-                    // Basic haptic or animation if needed
+                    // Tạo hiệu ứng rung nhẹ cho mô hình 3D khi gõ
+                    _controller.cameraTarget(0, 0.05, 0);
+                    Future.delayed(const Duration(milliseconds: 50), () {
+                      _controller.cameraTarget(0, 0, 0);
+                    });
                   },
                   child: O3D(
                     controller: _controller,
-                    src: 'assets/models/mo.glb',
+                    src: 'assets/models/mo.glb', // Sử dụng file local
                     autoPlay: true,
-                    autoRotate: true,
- // Make it rotate so users know it's 3D
+                    autoRotate: false, // Tắt tự xoay để tập trung vào tương tác gõ
                     cameraControls: true,
                     backgroundColor: Colors.transparent,
-                    loading: Loading.eager, // Load immediately
+                    loading: Loading.eager,
                   ),
                 ),
               ),
 
-              // Stats Overlay - Moved slightly to avoid 3D model interaction issues
+              // Stats Overlay
               Align(
                 alignment: Alignment.topCenter,
                 child: Padding(
@@ -128,20 +131,21 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                 ),
               ),
 
-              // Help Text
+              // Floating Instruction
               Positioned(
-                bottom: 30,
+                bottom: 40,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppTheme.darkWood.withOpacity(0.2)),
                     ),
                     child: const Text(
-                      'Chạm vào mõ để tụng kinh',
+                      'Chạm trực tiếp vào vật thể để gõ',
                       style: TextStyle(
                         color: AppTheme.darkWood,
                         fontWeight: FontWeight.bold,
@@ -163,7 +167,9 @@ class _MonkBellScreenState extends State<MonkBellScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: AppTheme.darkWood.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)
+        ],
       ),
       child: Row(
         children: [
