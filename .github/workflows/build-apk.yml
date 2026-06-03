@@ -24,34 +24,18 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter doctor -v
-
-      - name: Debug — show environment
-        run: |
-          echo "=== flutter --version ==="
-          flutter --version
-          echo "=== java ==="
-          java -version 2>&1 || echo "no java"
-          echo "=== ANDROID_HOME ==="
-          echo $ANDROID_HOME
-          ls -la android/local.properties 2>/dev/null || echo "no local.properties"
-
-      - name: Build APK with verbose logging
-        run: flutter build apk --release --verbose 2>&1 | tee build.log
-
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
+      - run: flutter build apk --release
 
       - name: Rename APK with version
         run: |
           VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
           APP_NAME=$(grep '^name: ' pubspec.yaml | sed 's/name: //')
-          mv build/app/outputs/flutter-apk/app-release.apk \
-             "${APP_NAME}-v${VERSION}-release.apk"
+          APK=$(find build -name "app-release.apk" -type f | head -1)
+          if [ -z "$APK" ]; then
+            echo "APK not found!" >&2
+            exit 1
+          fi
+          mv "$APK" "${APP_NAME}-v${VERSION}-release.apk"
 
       - uses: actions/upload-artifact@v4
         with:
