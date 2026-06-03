@@ -29,7 +29,9 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter clean && flutter build apk --release
+      - run: flutter doctor --android-licenses
+
+      - run: flutter build apk --release
 
       - name: Rename APK with version
         run: |
