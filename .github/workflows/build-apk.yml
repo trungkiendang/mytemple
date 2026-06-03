@@ -24,23 +24,6 @@ jobs:
 
       - run: flutter pub get
 
-      - name: Generate keystore for signing
-        run: |
-          KEYSTORE_PASS="${KEYSTORE_PASS:-temple123}"
-          KEY_PASS="${KEY_PASS:-temple123}"
-          KEY_ALIAS="${KEY_ALIAS:-temple_vibe}"
-          keytool -genkey -v \
-            -keystore android/app/temple_vibe.keystore \
-            -alias "$KEY_ALIAS" \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "$KEYSTORE_PASS" \
-            -keypass "$KEY_PASS" \
-            -dname "CN=Trung Kien Dang, OU=Development, O=Temple Vibe, L=HCMC, ST=Vietnam, C=VN"
-          echo "storePassword=$KEYSTORE_PASS" > android/key.properties
-          echo "keyPassword=$KEY_PASS" >> android/key.properties
-          echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-          echo "storeFile=temple_vibe.keystore" >> android/key.properties
-
       - run: flutter build apk --release
 
       - name: Rename APK with version
