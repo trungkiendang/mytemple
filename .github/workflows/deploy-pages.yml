@@ -4,11 +4,18 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -22,8 +29,17 @@ jobs:
 
       - run: flutter build web --release --base-href /
 
-      - uses: peaceiris/actions-gh-pages@v4
+      - run: echo 'chant.iamkien.tech' > build/web/CNAME
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build/web
-          cname: chant.iamkien.tech
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: https://chant.iamkien.tech
+    steps:
+      - uses: actions/deploy-pages@v4
