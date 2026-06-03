@@ -58,7 +58,7 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                   },
                   child: O3D(
                     controller: _controller,
-                    src: kDebugMode ? 'assets/models/mo.glb' : 'models/mo.glb',
+                    src: kReleaseMode || kProfileMode ? 'assets/models/mo.glb' : 'assets/assets/models/mo.glb',
                     autoPlay: true,
                     autoRotate: false,
                     cameraControls: true,

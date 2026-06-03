@@ -158,7 +158,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                       }
                     },
                     child: O3D(
-                      src: kDebugMode ? 'assets/models/incense_bowl.glb' : 'models/incense_bowl.glb',
+                      src: kReleaseMode || kProfileMode ? 'assets/models/incense_bowl.glb' : 'assets/assets/models/incense_bowl.glb',
                       controller: _o3dController,
                       autoPlay: true,
                       autoRotate: true,

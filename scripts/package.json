@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@gltf-transform/core": "^4.3.0",
     "firebase-admin": "^13.8.0"
   }
 }
