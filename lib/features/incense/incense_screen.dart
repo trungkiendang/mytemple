@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
@@ -12,9 +15,112 @@ class IncenseScreen extends StatefulWidget {
   State<IncenseScreen> createState() => _IncenseScreenState();
 }
 
+class _SmokeParticle {
+  double x;
+  double y;
+  double size;
+  double opacity;
+  double speedY;
+  double driftX;
+  double life;
+
+  _SmokeParticle({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.opacity,
+    required this.speedY,
+    required this.driftX,
+    required this.life,
+  });
+}
+
+class _SmokePainter extends CustomPainter {
+  final List<_SmokeParticle> particles;
+
+  _SmokePainter(this.particles);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final p in particles) {
+      final paint = Paint()
+        ..color = Colors.white.withOpacity(p.opacity * 0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      canvas.drawCircle(
+        Offset(p.x * size.width, p.y * size.height),
+        p.size,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SmokePainter oldDelegate) => true;
+}
+
 class _IncenseScreenState extends State<IncenseScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   final O3DController _o3dController = O3DController();
+  late AnimationController _smokeController;
+  final List<_SmokeParticle> _particles = [];
+  final Random _random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _smokeController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..addListener(_updateParticles);
+  }
+
+  @override
+  void dispose() {
+    _smokeController.dispose();
+    super.dispose();
+  }
+
+  void _startSmoke() {
+    _particles.clear();
+    for (int i = 0; i < 12; i++) {
+      _particles.add(_createParticle(_random.nextDouble()));
+    }
+    _smokeController.repeat();
+  }
+
+  void _stopSmoke() {
+    _smokeController.stop();
+    _particles.clear();
+  }
+
+  _SmokeParticle _createParticle(double life) {
+    const baseX = 0.5;
+    const baseY = 0.38;
+    return _SmokeParticle(
+      x: baseX + (_random.nextDouble() - 0.5) * 0.06,
+      y: baseY + (_random.nextDouble() - 0.5) * 0.02,
+      size: 6 + _random.nextDouble() * 10,
+      opacity: 0.3 + _random.nextDouble() * 0.4,
+      speedY: 0.003 + _random.nextDouble() * 0.005,
+      driftX: (_random.nextDouble() - 0.5) * 0.004,
+      life: life,
+    );
+  }
+
+  void _updateParticles() {
+    for (int i = 0; i < _particles.length; i++) {
+      final p = _particles[i];
+      p.life += p.speedY;
+      p.y -= p.speedY;
+      p.x += p.driftX;
+      p.size += 0.15;
+      p.opacity = (0.7 - p.life * 0.7).clamp(0.0, 0.7);
+      if (p.life >= 1.0) {
+        _particles[i] = _createParticle(0);
+      }
+    }
+    if (mounted) setState(() {});
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -24,6 +130,12 @@ class _IncenseScreenState extends State<IncenseScreen>
     super.build(context);
     final incenseProvider = Provider.of<IncenseProvider>(context);
     final monkBellProvider = Provider.of<MonkBellProvider>(context);
+
+    if (incenseProvider.isBurning && !_smokeController.isAnimating) {
+      _startSmoke();
+    } else if (!incenseProvider.isBurning && _smokeController.isAnimating) {
+      _stopSmoke();
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.parchment,
@@ -36,29 +148,37 @@ class _IncenseScreenState extends State<IncenseScreen>
           Expanded(
             child: Stack(
               children: [
-                // 3D Model Area - INTERACTIVE
                 Positioned.fill(
                   child: GestureDetector(
                     onTap: () {
                       if (!incenseProvider.isBurning) {
-                        // Gợi ý người dùng chọn thời gian nếu chưa thắp
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Vui lòng chọn thời gian để thắp hương')),
                         );
                       }
                     },
                     child: O3D(
-                      src: 'assets/models/incense_bowl.glb', // Sử dụng file local
+                      src: kDebugMode ? 'assets/models/incense_bowl.glb' : 'models/incense_bowl.glb',
                       controller: _o3dController,
                       autoPlay: true,
                       autoRotate: true,
                       cameraControls: true,
+                      disableTap: true,
                       backgroundColor: Colors.transparent,
+                      loading: Loading.eager,
                     ),
                   ),
                 ),
-                
-                // Online Badge overlay
+
+                if (incenseProvider.isBurning)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _SmokePainter(_particles),
+                      ),
+                    ),
+                  ),
+
                 Positioned(
                   top: 20,
                   right: 20,

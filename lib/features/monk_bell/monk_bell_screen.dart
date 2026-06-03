@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
@@ -57,10 +58,11 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                   },
                   child: O3D(
                     controller: _controller,
-                    src: 'assets/models/mo.glb', // Sử dụng file local
+                    src: kDebugMode ? 'assets/models/mo.glb' : 'models/mo.glb',
                     autoPlay: true,
-                    autoRotate: false, // Tắt tự xoay để tập trung vào tương tác gõ
+                    autoRotate: false,
                     cameraControls: true,
+                    disableTap: true,
                     backgroundColor: Colors.transparent,
                     loading: Loading.eager,
                   ),
