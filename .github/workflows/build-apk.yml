@@ -1,0 +1,39 @@
+name: Build Release APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: flutter build apk --release
+
+      - name: Rename APK with version
+        run: |
+          VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
+          APP_NAME=$(grep '^name: ' pubspec.yaml | sed 's/name: //')
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             "${APP_NAME}-v${VERSION}-release.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: "*.apk"
