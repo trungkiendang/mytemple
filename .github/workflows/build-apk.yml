@@ -24,9 +24,21 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build apk --release
+      - name: Build APK
+        id: build
+        run: |
+          flutter build apk --release 2>&1 | tee build.log; exit_code=${PIPESTATUS[0]}
+          echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+          exit $exit_code
+
+      - name: Print error from log
+        if: failure()
+        run: |
+          ERROR=$(tail -50 build.log 2>/dev/null || echo "No build.log")
+          echo "::error title=Build Error::$(echo "$ERROR" | tr '\n' ';' | head -c 2000)"
 
       - name: Rename APK with version
+        if: success()
         run: |
           VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
           APP_NAME=$(grep '^name: ' pubspec.yaml | sed 's/name: //')
@@ -38,6 +50,14 @@ jobs:
           mv "$APK" "${APP_NAME}-v${VERSION}-release.apk"
 
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: release-apk
           path: "*.apk"
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
