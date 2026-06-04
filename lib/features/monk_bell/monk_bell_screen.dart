@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
@@ -56,15 +55,16 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                       _controller.cameraTarget(0, 0, 0);
                     });
                   },
-                  child: O3D(
+                    child: O3D(
                     controller: _controller,
-                    src: kReleaseMode || kProfileMode ? 'assets/models/mo.glb' : 'assets/assets/models/mo.glb',
+                    src: 'assets/models/mo.glb',
                     autoPlay: true,
                     autoRotate: false,
                     cameraControls: true,
                     disableTap: true,
                     backgroundColor: Colors.transparent,
                     loading: Loading.eager,
+                    environmentImage: 'neutral',
                   ),
                 ),
               ),

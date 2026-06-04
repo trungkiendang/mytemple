@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
@@ -158,7 +157,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                       }
                     },
                     child: O3D(
-                      src: kReleaseMode || kProfileMode ? 'assets/models/incense_bowl.glb' : 'assets/assets/models/incense_bowl.glb',
+                      src: 'assets/models/incense_bowl.glb',
                       controller: _o3dController,
                       autoPlay: true,
                       autoRotate: true,
@@ -166,6 +165,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                       disableTap: true,
                       backgroundColor: Colors.transparent,
                       loading: Loading.eager,
+                      environmentImage: 'neutral',
                     ),
                   ),
                 ),
