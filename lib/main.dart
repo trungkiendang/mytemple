@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_theme.dart';
@@ -16,6 +16,7 @@ import 'features/incense/incense_screen.dart';
 import 'features/calendar/event_provider.dart';
 import 'features/calendar/lunar_calendar_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/profile/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +62,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => IncenseProvider()),
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => TtsService()),
+        ChangeNotifierProvider(create: (_) => AppAuthProvider()),
       ],
       child: MaterialApp(
         title: 'My Chùa',

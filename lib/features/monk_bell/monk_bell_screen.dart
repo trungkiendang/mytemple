@@ -47,20 +47,19 @@ class _MonkBellScreenState extends State<MonkBellScreen>
               // 3D Model Area - INTERACTIVE
               Positioned.fill(
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     provider.tap();
-                    // Tạo hiệu ứng rung nhẹ cho mô hình 3D khi gõ
-                    _controller.cameraTarget(0, 0.05, 0);
-                    Future.delayed(const Duration(milliseconds: 50), () {
-                      _controller.cameraTarget(0, 0, 0);
-                    });
+                    _controller.cameraTarget(0, 0.06, 0);
+                    await Future.delayed(const Duration(milliseconds: 60));
+                    _controller.cameraTarget(0, 0, 0);
                   },
                     child: O3D(
                     controller: _controller,
                     src: 'assets/models/mo.glb',
                     autoPlay: true,
-                    autoRotate: false,
-                    cameraControls: true,
+                    autoRotate: true,
+                    rotationPerSecond: '30deg',
+                    cameraControls: false,
                     disableTap: true,
                     backgroundColor: Colors.transparent,
                     loading: Loading.eager,

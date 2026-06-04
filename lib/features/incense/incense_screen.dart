@@ -41,13 +41,20 @@ class _SmokePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final now = DateTime.now().millisecondsSinceEpoch;
     for (final p in particles) {
+      final wobble = (now / 2000 + p.x * 20) % 1.0;
+      final sway = (wobble - 0.5) * 2 * 0.03;
+      final opacity = p.opacity * (1 - p.life);
       final paint = Paint()
-        ..color = Colors.white.withOpacity(p.opacity * 0.35)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+        ..color = Colors.white.withOpacity(opacity * 0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
       canvas.drawCircle(
-        Offset(p.x * size.width, p.y * size.height),
-        p.size,
+        Offset(
+          (p.x + sway + p.driftX * p.life * 2) * size.width,
+          (p.y - p.life * 0.3) * size.height,
+        ),
+        p.size + p.life * size.width * 0.06,
         paint,
       );
     }
@@ -79,10 +86,11 @@ class _IncenseScreenState extends State<IncenseScreen>
     super.dispose();
   }
 
-  void _startSmoke() {
+  void _startSmoke(int stickCount) {
     _particles.clear();
-    for (int i = 0; i < 12; i++) {
-      _particles.add(_createParticle(_random.nextDouble()));
+    final count = switch (stickCount) { 3 => 20, 5 => 30, _ => 12 };
+    for (int i = 0; i < count; i++) {
+      _particles.add(_createParticle(_random.nextDouble(), stickCount));
     }
     _smokeController.repeat();
   }
@@ -92,30 +100,29 @@ class _IncenseScreenState extends State<IncenseScreen>
     _particles.clear();
   }
 
-  _SmokeParticle _createParticle(double life) {
-    const baseX = 0.5;
+  _SmokeParticle _createParticle(double life, int stickCount) {
     const baseY = 0.38;
+    final spread = switch (stickCount) { 3 => 0.1, 5 => 0.15, _ => 0.04 };
     return _SmokeParticle(
-      x: baseX + (_random.nextDouble() - 0.5) * 0.06,
+      x: 0.5 + (_random.nextDouble() - 0.5) * spread,
       y: baseY + (_random.nextDouble() - 0.5) * 0.02,
-      size: 6 + _random.nextDouble() * 10,
-      opacity: 0.3 + _random.nextDouble() * 0.4,
-      speedY: 0.003 + _random.nextDouble() * 0.005,
-      driftX: (_random.nextDouble() - 0.5) * 0.004,
+      size: 4 + _random.nextDouble() * 8,
+      opacity: 0.2 + _random.nextDouble() * 0.3,
+      speedY: 0.002 + _random.nextDouble() * 0.004,
+      driftX: (_random.nextDouble() - 0.5) * 0.003,
       life: life,
     );
   }
 
   void _updateParticles() {
+    final provider = context.read<IncenseProvider>();
     for (int i = 0; i < _particles.length; i++) {
       final p = _particles[i];
-      p.life += p.speedY;
-      p.y -= p.speedY;
-      p.x += p.driftX;
-      p.size += 0.15;
-      p.opacity = (0.7 - p.life * 0.7).clamp(0.0, 0.7);
+      p.life += 0.008;
+      p.driftX += (_random.nextDouble() - 0.5) * 0.0005;
+      p.size += 0.12;
       if (p.life >= 1.0) {
-        _particles[i] = _createParticle(0);
+        _particles[i] = _createParticle(0, provider.stickCount);
       }
     }
     if (mounted) setState(() {});
@@ -131,7 +138,7 @@ class _IncenseScreenState extends State<IncenseScreen>
     final monkBellProvider = Provider.of<MonkBellProvider>(context);
 
     if (incenseProvider.isBurning && !_smokeController.isAnimating) {
-      _startSmoke();
+      _startSmoke(incenseProvider.stickCount);
     } else if (!incenseProvider.isBurning && _smokeController.isAnimating) {
       _stopSmoke();
     }
@@ -157,7 +164,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                       }
                     },
                     child: O3D(
-                      src: 'assets/models/incense_bowl.glb',
+                      src: incenseProvider.modelSrc,
                       controller: _o3dController,
                       autoPlay: true,
                       autoRotate: true,
@@ -270,6 +277,28 @@ class _IncenseScreenState extends State<IncenseScreen>
               children: [
                 if (!incenseProvider.isBurning) ...[
                   const Text(
+                    'Số que hương',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkWood,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildStickBtn(context, 1, '1'),
+                      const SizedBox(width: 16),
+                      _buildStickBtn(context, 3, '3'),
+                      const SizedBox(width: 16),
+                      _buildStickBtn(context, 5, '5'),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
                     'Thời gian thắp hương',
                     style: TextStyle(
                       fontSize: 20,
@@ -307,6 +336,40 @@ class _IncenseScreenState extends State<IncenseScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStickBtn(BuildContext context, int count, String label) {
+    final provider = Provider.of<IncenseProvider>(context, listen: false);
+    final isSelected = provider.stickCount == count;
+    return GestureDetector(
+      onTap: () {
+        provider.setStickCount(count);
+        _o3dController.cameraTarget(0, 0, 0);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.woodBrown : Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: isSelected ? AppTheme.darkWood : AppTheme.woodBrown.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: AppTheme.darkWood.withOpacity(0.3), blurRadius: 8)]
+              : null,
+        ),
+        child: Text(
+          '$label Que',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: isSelected ? Colors.white : AppTheme.darkWood,
+          ),
+        ),
       ),
     );
   }

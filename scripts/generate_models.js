@@ -1,288 +1,130 @@
-const { Document, Accessor, Primitive, Mesh, Node, Material, NodeIO } = require('@gltf-transform/core');
-const fs = require('fs');
-const path = require('path');
+const { NodeIO } = require('@gltf-transform/core');
+const PNG = require('pngjs').PNG;
 
-const ASSETS_DIR = path.resolve(__dirname, '..', 'assets', 'models');
+const io = new NodeIO();
+const ASSETS = '/Volumes/KunX/Workspace/mytemple/assets/models';
 
-function createRevolvedGeometry(profile, segments, withCap = false) {
-  const positions = [];
-  const normals = [];
-  const uvs = [];
-  const n = profile.length;
-  const totalSegments = segments;
-
-  for (let i = 0; i <= totalSegments; i++) {
-    const theta = (i / totalSegments) * 2 * Math.PI;
-    const sinT = Math.sin(theta);
-    const cosT = Math.cos(theta);
-    for (let j = 0; j < n; j++) {
-      const [rx, ry] = profile[j];
-      positions.push(rx * cosT, ry, rx * sinT);
-      normals.push(cosT, 0, sinT);
-      uvs.push(i / totalSegments, j / (n - 1));
+// ── Wood Texture Generator ────────────────────────────────────────
+function createWoodTexture(doc) {
+  const width = 256, height = 256;
+  const png = new PNG({ width, height });
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const grain = Math.sin(y * 0.08 + Math.sin(x * 0.04 + y * 0.02) * 2) * 0.12 + 0.78;
+      const knot = Math.exp(-((x - 128) ** 2 + (y - 90) ** 2) / 1500) * 0.3;
+      const val = Math.min(255, Math.max(0, Math.floor((grain - knot + Math.random() * 0.04) * 200)));
+      png.data[idx] = Math.min(255, Math.floor(val * 1.1));
+      png.data[idx + 1] = Math.floor(val * 0.65);
+      png.data[idx + 2] = Math.floor(val * 0.25);
+      png.data[idx + 3] = 255;
     }
   }
-
-  const indices = [];
-  for (let i = 0; i < totalSegments; i++) {
-    for (let j = 0; j < n - 1; j++) {
-      const a = i * n + j;
-      const b = i * n + j + 1;
-      const c = (i + 1) * n + j;
-      const d = (i + 1) * n + j + 1;
-      indices.push(a, c, b);
-      indices.push(b, c, d);
-    }
-  }
-
-  if (withCap && profile[0][0] === 0) {
-    const centerIdx = positions.length / 3;
-    positions.push(0, profile[0][1], 0);
-    normals.push(0, -1, 0);
-    for (let i = 0; i <= totalSegments; i++) {
-      const theta = (i / totalSegments) * 2 * Math.PI;
-      const idx = i * n;
-      if (i < totalSegments) {
-        const nextIdx = (i + 1) * n;
-        indices.push(centerIdx, nextIdx, idx);
-      }
-    }
-  }
-
-  return { positions, normals, uvs, indices };
+  const tex = doc.createTexture('wood_grain');
+  tex.setImage(new Uint8Array(PNG.sync.write(png)));
+  tex.setMimeType('image/png');
+  return tex;
 }
 
-function createCylinderGeometry(radiusBottom, radiusTop, height, segments, heightSegments) {
-  const positions = [];
-  const normals = [];
-  const indices = [];
+// ── Improve Bell Model ─────────────────────────────────────────────
+async function improveBell() {
+  const doc = await io.read(`${ASSETS}/mo.glb`);
+  const tex = createWoodTexture(doc);
 
-  for (let j = 0; j <= heightSegments; j++) {
-    const y = (j / heightSegments) * height - height / 2;
-    const r = radiusBottom + (radiusTop - radiusBottom) * (j / heightSegments);
-    for (let i = 0; i <= segments; i++) {
-      const theta = (i / segments) * 2 * Math.PI;
-      const x = r * Math.cos(theta);
-      const z = r * Math.sin(theta);
-      positions.push(x, y, z);
-      const len = Math.sqrt(x * x + height * height + z * z);
-      const ny = (radiusTop - radiusBottom) / height;
-      const nx = x / Math.sqrt(x * x + z * z);
-      const nz = z / Math.sqrt(x * x + z * z);
-      const nl = Math.sqrt(nx * nx + ny * ny + nz * nz);
-      normals.push(nx / nl, ny / nl, nz / nl);
-    }
+  const mat = doc.getRoot().listMaterials()[0] || doc.createMaterial('wood_bell');
+  mat.setName('wood_bell');
+  mat.setBaseColorTexture(tex);
+  mat.setBaseColorFactor([1, 1, 1, 1]);
+  mat.setMetallicFactor(0.02);
+  mat.setRoughnessFactor(0.6);
+  mat.setEmissiveFactor([0, 0, 0]);
+
+  await io.write(`${ASSETS}/mo.glb`, doc);
+  console.log('✓ Bell model improved');
+}
+
+// ── Stick Position Layouts ────────────────────────────────────────
+const STICK_LAYOUTS = {
+  1: [[0, 0]],
+  3: [[-0.08, 0], [0.08, 0], [0, 0.08]],
+  5: [[-0.08, -0.08], [0.08, -0.08], [-0.08, 0.08], [0.08, 0.08], [0, 0]]
+};
+
+// ── Create Incense Variants ────────────────────────────────────────
+async function createIncenseVariant(count) {
+  // Read source model
+  const doc = await io.read(`${ASSETS}/incense_bowl.glb`);
+  const root = doc.getRoot();
+
+  // Create wood texture
+  const tex = createWoodTexture(doc);
+
+  // ── Update existing materials ──
+  const srcMats = root.listMaterials();
+  srcMats[0].setName('bowl_wood');
+  srcMats[0].setBaseColorTexture(tex);
+  srcMats[0].setBaseColorFactor([0.9, 0.85, 0.7, 1]);
+  srcMats[0].setMetallicFactor(0.0);
+  srcMats[0].setRoughnessFactor(0.8);
+
+  // Update stick material (also dark brown, make it lighter)
+  // Both bowl and stick used srcMats[0]. Let's make a separate material for stick
+  const stickMat = doc.createMaterial('stick');
+  stickMat.setBaseColorFactor([0.82, 0.7, 0.45, 1]);
+  stickMat.setMetallicFactor(0.0);
+  stickMat.setRoughnessFactor(0.9);
+
+  // Update ember material
+  srcMats[1].setName('ember');
+  srcMats[1].setBaseColorFactor([0.9, 0.15, 0.05, 1]);
+  srcMats[1].setEmissiveFactor([3, 0.5, 0.1]);
+  srcMats[1].setMetallicFactor(0.0);
+  srcMats[1].setRoughnessFactor(0.4);
+
+  // ── Remove existing stick/tip nodes (keep bowl) ──
+  const scene = root.listScenes()[0];
+  const children = [...scene.listChildren()];
+  const bowlNode = children[0]; // first node is bowl at [0,0,0]
+  // Clear scene children
+  for (const child of children) {
+    scene.removeChild(child);
+  }
+  scene.addChild(bowlNode);
+
+  // ── Assign stick material ──
+  // Find stick/tip meshes by vertex count
+  const meshes = root.listMeshes();
+  const stickMesh = meshes.find(m => m.listPrimitives()[0].getAttribute('POSITION').getCount() === 117);
+  const tipMesh = meshes.find(m => m.listPrimitives()[0].getAttribute('POSITION').getCount() === 81);
+  if (stickMesh) stickMesh.listPrimitives()[0].setMaterial(stickMat);
+  if (tipMesh) tipMesh.listPrimitives()[0].setMaterial(srcMats[1]); // ember mat
+
+  // ── Add stick nodes ──
+  const positions = STICK_LAYOUTS[count] || STICK_LAYOUTS[1];
+  for (const [dx, dz] of positions) {
+    const sNode = doc.createNode();
+    sNode.setMesh(stickMesh);
+    sNode.setTranslation([dx, 0.47, dz]);
+    scene.addChild(sNode);
+
+    const tNode = doc.createNode();
+    tNode.setMesh(tipMesh);
+    tNode.setTranslation([dx, 0.82, dz]);
+    scene.addChild(tNode);
   }
 
-  for (let j = 0; j < heightSegments; j++) {
-    for (let i = 0; i < segments; i++) {
-      const a = j * (segments + 1) + i;
-      const b = a + 1;
-      const c = (j + 1) * (segments + 1) + i;
-      const d = c + 1;
-      indices.push(a, c, b);
-      indices.push(b, c, d);
-    }
-  }
-
-  return { positions, normals, indices: indices };
+  const filename = `incense_${count}.glb`;
+  await io.write(`${ASSETS}/${filename}`, doc);
+  console.log(`✓ Created ${filename} with ${count} stick(s)`);
 }
 
-function createSphereGeometry(radius, latSegs, lonSegs, startLat = 0, endLat = Math.PI) {
-  const positions = [];
-  const normals = [];
-  const indices = [];
-
-  for (let lat = 0; lat <= latSegs; lat++) {
-    const theta = startLat + (lat / latSegs) * (endLat - startLat);
-    const sinT = Math.sin(theta);
-    const cosT = Math.cos(theta);
-    for (let lon = 0; lon <= lonSegs; lon++) {
-      const phi = (lon / lonSegs) * 2 * Math.PI;
-      const x = radius * Math.sin(phi) * sinT;
-      const y = radius * cosT;
-      const z = radius * Math.cos(phi) * sinT;
-      positions.push(x, y, z);
-      const len = Math.sqrt(x * x + y * y + z * z);
-      normals.push(x / len, y / len, z / len);
-    }
-  }
-
-  for (let lat = 0; lat < latSegs; lat++) {
-    for (let lon = 0; lon < lonSegs; lon++) {
-      const a = lat * (lonSegs + 1) + lon;
-      const b = a + 1;
-      const c = (lat + 1) * (lonSegs + 1) + lon;
-      const d = c + 1;
-      indices.push(a, c, b);
-      indices.push(b, c, d);
-    }
-  }
-
-  return { positions, normals, indices };
-}
-
-function buildMesh(doc, geometry, material) {
-  const posArr = new Float32Array(geometry.positions);
-  const normArr = new Float32Array(geometry.normals);
-  const idxArr = geometry.indices.length < 65536
-    ? new Uint16Array(geometry.indices)
-    : new Uint32Array(geometry.indices);
-
-  const posAcc = doc.createAccessor()
-    .setArray(posArr)
-    .setType(Accessor.Type.VEC3);
-  const normAcc = doc.createAccessor()
-    .setArray(normArr)
-    .setType(Accessor.Type.VEC3);
-  const idxAcc = doc.createAccessor()
-    .setArray(idxArr)
-    .setType(Accessor.Type.SCALAR);
-
-  const prim = doc.createPrimitive()
-    .setIndices(idxAcc)
-    .setAttribute('POSITION', posAcc)
-    .setAttribute('NORMAL', normAcc);
-
-  if (material) prim.setMaterial(material);
-
-  const mesh = doc.createMesh();
-  mesh.addPrimitive(prim);
-  return mesh;
-}
-
-async function generateBell() {
-  const doc = new Document();
-  doc.createBuffer().setURI('mo.bin');
-
-  const woodColor = [0.45, 0.25, 0.1];
-  const woodMat = doc.createMaterial()
-    .setBaseColorFactor(woodColor)
-    .setMetallicFactor(0.0)
-    .setRoughnessFactor(0.8);
-
-  // Bell body profile (revolved) - wooden fish/bowl shape
-  const profile = [
-    [0.0, 0.0],
-    [0.5, 0.0],
-    [0.7, 0.02],
-    [0.85, 0.05],
-    [0.95, 0.12],
-    [1.0, 0.25],
-    [0.98, 0.4],
-    [0.9, 0.55],
-    [0.75, 0.68],
-    [0.55, 0.78],
-    [0.3, 0.85],
-    [0.1, 0.88],
-    [0.0, 0.9],
-  ];
-
-  const bodyGeo = createRevolvedGeometry(profile, 32, true);
-  const bodyMesh = buildMesh(doc, bodyGeo, woodMat);
-
-  // Knob on top
-  const knobProfile = [
-    [0.0, 0.9],
-    [0.08, 0.9],
-    [0.06, 0.95],
-    [0.03, 0.98],
-    [0.0, 1.0],
-  ];
-  const knobGeo = createRevolvedGeometry(knobProfile, 16);
-  const knobMesh = buildMesh(doc, knobGeo, woodMat);
-
-  const bodyNode = doc.createNode()
-    .setMesh(bodyMesh)
-    .setTranslation([0, 0, 0]);
-
-  const knobNode = doc.createNode()
-    .setMesh(knobMesh)
-    .setTranslation([0, 0, 0]);
-
-  const rootNode = doc.createNode();
-  rootNode.addChild(bodyNode);
-  rootNode.addChild(knobNode);
-
-  doc.createScene().addChild(rootNode);
-
-  const io = new NodeIO();
-  const outPath = path.join(ASSETS_DIR, 'mo.glb');
-  await io.write(outPath, doc);
-  console.log('✓ Generated bell model:', outPath);
-}
-
-async function generateIncense() {
-  const doc = new Document();
-  doc.createBuffer().setURI('incense_bowl.bin');
-
-  // Brown for bowl and stick
-  const brownMat = doc.createMaterial()
-    .setBaseColorFactor([0.35, 0.2, 0.08])
-    .setMetallicFactor(0.0)
-    .setRoughnessFactor(0.9);
-
-  // Red/orange for the burning tip
-  const tipMat = doc.createMaterial()
-    .setBaseColorFactor([0.9, 0.2, 0.05])
-    .setEmissiveFactor([0.6, 0.1, 0.0])
-    .setMetallicFactor(0.0)
-    .setRoughnessFactor(0.7);
-
-  // Bowl at the bottom
-  const bowlProfile = [
-    [0.0, 0.0],
-    [0.25, 0.0],
-    [0.3, 0.02],
-    [0.35, 0.05],
-    [0.32, 0.08],
-    [0.25, 0.1],
-    [0.0, 0.12],
-  ];
-  const bowlGeo = createRevolvedGeometry(bowlProfile, 24, true);
-  const bowlMesh = buildMesh(doc, bowlGeo, brownMat);
-
-  // Incense stick - thin cylinder going up from bowl center
-  const stickGeo = createCylinderGeometry(0.015, 0.012, 0.7, 12, 8);
-  const stickMesh = buildMesh(doc, stickGeo, brownMat);
-
-  // Burning tip - small sphere on top of stick
-  const tipGeo = createSphereGeometry(0.025, 8, 8);
-  const tipMesh = buildMesh(doc, tipGeo, tipMat);
-
-  const bowlNode = doc.createNode()
-    .setMesh(bowlMesh)
-    .setTranslation([0, 0, 0]);
-
-  const stickNode = doc.createNode()
-    .setMesh(stickMesh)
-    .setTranslation([0, 0.12 + 0.35, 0]);
-
-  const tipNode = doc.createNode()
-    .setMesh(tipMesh)
-    .setTranslation([0, 0.12 + 0.7, 0]);
-
-  const rootNode = doc.createNode();
-  rootNode.addChild(bowlNode);
-  rootNode.addChild(stickNode);
-  rootNode.addChild(tipNode);
-
-  doc.createScene().addChild(rootNode);
-
-  const io = new NodeIO();
-  const outPath = path.join(ASSETS_DIR, 'incense_bowl.glb');
-  await io.write(outPath, doc);
-  console.log('✓ Generated incense model:', outPath);
-}
-
+// ── Main ───────────────────────────────────────────────────────────
 async function main() {
-  fs.mkdirSync(ASSETS_DIR, { recursive: true });
-  await generateBell();
-  await generateIncense();
-  console.log('Done!');
+  await improveBell();
+  for (const count of [1, 3, 5]) {
+    await createIncenseVariant(count);
+  }
+  console.log('\nDone!');
 }
 
-main().catch(e => {
-  console.error('Error:', e.message);
-  process.exit(1);
-});
+main().catch(e => { console.error('✗ Error:', e.message); process.exit(1); });
