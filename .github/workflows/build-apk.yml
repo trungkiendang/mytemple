@@ -31,80 +31,16 @@ jobs:
 
       - name: Patch pub cache for AGP 9.0 compatibility
         run: |
-          # flutter_haptic v0.0.3 - missing namespace, old compileSdk, JVM target mismatch
-          FILE="$HOME/.pub-cache/hosted/pub.dev/flutter_haptic-0.0.3/android/build.gradle"
-          if [ -f "$FILE" ]; then
-            python3 -c "
-content = '''group 'studio.creche.flutter_haptic'
-version '1.0-SNAPSHOT'
-
-rootProject.allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-
-android {
-    compileSdkVersion 35
-    namespace \"studio.creche.flutter_haptic\"
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-    defaultConfig {
-        minSdkVersion 23
-    }
-}
-
-dependencies {
-    implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk7\"
-}'''
-with open('$FILE', 'w') as f:
-    f.write(content)
-"
+          # flutter_haptic v0.0.3
+          F="$HOME/.pub-cache/hosted/pub.dev/flutter_haptic-0.0.3/android/build.gradle"
+          if [ -f "$F" ]; then
+            python3 -c "open('$F','w').write('''group \"studio.creche.flutter_haptic\"\nversion \"1.0-SNAPSHOT\"\napply plugin: \"com.android.library\"\napply plugin: \"kotlin-android\"\nandroid {\n  compileSdkVersion 35\n  namespace \"studio.creche.flutter_haptic\"\n  compileOptions {\n    sourceCompatibility JavaVersion.VERSION_17\n    targetCompatibility JavaVersion.VERSION_17\n  }\n  kotlinOptions {\n    jvmTarget = JavaVersion.VERSION_17.toString()\n  }\n  sourceSets {\n    main.java.srcDirs += \"src/main/kotlin\"\n  }\n  defaultConfig {\n    minSdkVersion 23\n  }\n}\ndependencies {\n  implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk7\"\n}''')"
             echo "Patched flutter_haptic"
           fi
-
-          # device_info v2.0.3 - missing namespace, old compileSdk
-          FILE="$HOME/.pub-cache/hosted/pub.dev/device_info-2.0.3/android/build.gradle"
-          if [ -f "$FILE" ]; then
-            python3 -c "
-content = '''group 'io.flutter.plugins.deviceinfo'
-version '1.0-SNAPSHOT'
-
-rootProject.allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-apply plugin: 'com.android.library'
-
-android {
-    compileSdk 35
-    namespace \"io.flutter.plugins.deviceinfo\"
-
-    defaultConfig {
-        minSdkVersion 16
-    }
-}'''
-with open('$FILE', 'w') as f:
-    f.write(content)
-"
+          # device_info v2.0.3
+          F="$HOME/.pub-cache/hosted/pub.dev/device_info-2.0.3/android/build.gradle"
+          if [ -f "$F" ]; then
+            python3 -c "open('$F','w').write('''group \"io.flutter.plugins.deviceinfo\"\nversion \"1.0-SNAPSHOT\"\napply plugin: \"com.android.library\"\nandroid {\n  compileSdk 35\n  namespace \"io.flutter.plugins.deviceinfo\"\n  defaultConfig {\n    minSdkVersion 16\n  }\n}''')"
             echo "Patched device_info"
           fi
 
