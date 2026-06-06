@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'monk_bell_provider.dart';
 import '../../core/app_theme.dart';
 import '../community/leaderboard_screen.dart';
+import '../../utils/bell_tap_helper_stub.dart'
+    if (dart.library.js) '../../utils/bell_tap_helper_web.dart';
 
 class MonkBellScreen extends StatefulWidget {
   const MonkBellScreen({super.key});
@@ -15,6 +17,28 @@ class MonkBellScreen extends StatefulWidget {
 class _MonkBellScreenState extends State<MonkBellScreen>
     with AutomaticKeepAliveClientMixin {
   final O3DController _controller = O3DController();
+
+  @override
+  void initState() {
+    super.initState();
+    setupBellTap(_onBellTap);
+  }
+
+  @override
+  void dispose() {
+    teardownBellTap();
+    super.dispose();
+  }
+
+  void _onBellTap() {
+    if (!mounted) return;
+    final provider = context.read<MonkBellProvider>();
+    provider.tap();
+    _controller.cameraTarget(0, 0.06, 0);
+    Future.delayed(const Duration(milliseconds: 60), () {
+      _controller.cameraTarget(0, 0, 0);
+    });
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -44,16 +68,11 @@ class _MonkBellScreenState extends State<MonkBellScreen>
         builder: (context, provider, child) {
           return Stack(
             children: [
-              // 3D Model Area - INTERACTIVE
               Positioned.fill(
                 child: GestureDetector(
-                  onTap: () async {
-                    provider.tap();
-                    _controller.cameraTarget(0, 0.06, 0);
-                    await Future.delayed(const Duration(milliseconds: 60));
-                    _controller.cameraTarget(0, 0, 0);
-                  },
-                    child: O3D(
+                  onTap: _onBellTap,
+                  child: O3D(
+                    id: 'monk-bell',
                     controller: _controller,
                     src: 'assets/models/mo.glb',
                     autoPlay: true,
@@ -64,6 +83,14 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                     backgroundColor: Colors.transparent,
                     loading: Loading.eager,
                     environmentImage: 'neutral',
+                    relatedJs: '''
+                      (function(){
+                        var el = document.querySelector('#monk-bell');
+                        if (el) el.addEventListener('click', function(){
+                          if (window._onBellTap) window._onBellTap();
+                        });
+                      })();
+                    ''',
                   ),
                 ),
               ),

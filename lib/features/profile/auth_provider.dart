@@ -12,8 +12,9 @@ class AppAuthProvider with ChangeNotifier {
   bool get isLoggedIn => _user != null && !_isAnonymous && Firebase.apps.isNotEmpty;
   bool get initialized => _initialized;
   bool get firebaseReady => Firebase.apps.isNotEmpty;
+  String? get email => _user?.email;
 
-  AuthProvider() {
+  AppAuthProvider() {
     if (Firebase.apps.isNotEmpty) {
       _listen();
     } else {
