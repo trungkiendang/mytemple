@@ -73,27 +73,29 @@ function ellipsoid(rx, ry, rz, seg = 40, rings = 24) {
   return p;
 }
 
-// Rectangular patch of an ellipsoid surface: theta around Y (front = +Z = PI/2),
-// y1..y0 are heights as a fraction (-1..1) of the vertical radius.
-function ellipsoidPatch(rx, ry, rz, th0, th1, y0, y1, seg = 40, rings = 6) {
+// Patch of an ellipsoid surface: theta around Y (front = +Z = PI/2); the height range
+// (fractions -1..1 of the vertical radius) comes from yRange(u), u = 0..1 across theta.
+function ellipsoidPatch(rx, ry, rz, th0, th1, yRange, seg = 48, rings = 8) {
   const p = newPart();
-  const a0 = Math.acos(y1), a1 = Math.acos(y0); // phi from top
-  for (let i = 0; i <= rings; i++) {
-    const phi = a0 + (a1 - a0) * (i / rings);
-    for (let j = 0; j <= seg; j++) {
-      const th = th0 + (th1 - th0) * (j / seg);
+  for (let j = 0; j <= seg; j++) {
+    const u = j / seg;
+    const th = th0 + (th1 - th0) * u;
+    const [y0, y1] = yRange(u);
+    const a0 = Math.acos(y1), a1 = Math.acos(y0);
+    for (let i = 0; i <= rings; i++) {
+      const phi = a0 + (a1 - a0) * (i / rings);
       const x = Math.sin(phi) * Math.cos(th), y = Math.cos(phi), z = Math.sin(phi) * Math.sin(th);
       p.pos.push(x * rx, y * ry, z * rz);
       const nx = x / rx, ny = y / ry, nz = z / rz;
       const l = Math.hypot(nx, ny, nz);
       p.nor.push(nx / l, ny / l, nz / l);
-      p.uv.push(j / seg, i / rings);
+      p.uv.push(u, i / rings);
     }
   }
-  for (let i = 0; i < rings; i++) {
-    for (let j = 0; j < seg; j++) {
-      const a = i * (seg + 1) + j;
-      const b = a + seg + 1;
+  for (let j = 0; j < seg; j++) {
+    for (let i = 0; i < rings; i++) {
+      const a = j * (rings + 1) + i;
+      const b = a + rings + 1;
       p.idx.push(a, a + 1, b, a + 1, b + 1, b);
     }
   }
@@ -255,31 +257,42 @@ async function buildMo() {
   ], 64), velvet);
   b.add('cushion_rim', xform(torus(1.0, 0.02, 64, 8), { t: [0, 0.07, 0] }), gold);
 
-  // Monk's round wooden fish: lacquered dome with a wide mouth slit across the front
-  const cy = 0.25 + 0.6;
-  const R = [0.78, 0.62, 0.74];
-  b.add('body', xform(ellipsoid(R[0], R[1], R[2], 64, 36), { t: [0, cy, 0] }), wood);
-  const front = [Math.PI / 2 - 1.25, Math.PI / 2 + 1.25];
+  // Monk's round wooden fish: flattened lacquered dome, crescent-shaped mouth across the front
+  const R = [0.86, 0.6, 0.8];
+  const cy = 0.25 + R[1] * 0.92;
   const grow = (k) => R.map((r) => r * k);
-  // wide dark mouth with raised lips above and below
-  b.add('mouth', xform(ellipsoidPatch(...grow(1.03), ...front, -0.34, -0.1, 48, 5), { t: [0, cy, 0] }), dark);
-  b.add('lip_top', xform(ellipsoidPatch(...grow(1.05), front[0] + 0.25, front[1] - 0.25, -0.1, 0.02, 48, 3), { t: [0, cy, 0] }), wood);
-  b.add('lip_bottom', xform(ellipsoidPatch(...grow(1.05), front[0] + 0.25, front[1] - 0.25, -0.46, -0.34, 48, 3), { t: [0, cy, 0] }), wood);
-  // carved ridges around the crown
-  for (const [y, k] of [[0.42, 0.86], [0.6, 0.66], [0.78, 0.42]]) {
-    b.add(`ridge${y}`, xform(torus(R[0] * Math.sqrt(1 - y * y) * 1.02, 0.022, 64, 8), { t: [0, cy + R[1] * y, 0], s: [1, 1, R[2] / R[0]] }), gold);
+  b.add('body', xform(ellipsoid(R[0], R[1], R[2], 72, 40), { t: [0, cy, 0] }), wood);
+  const th = [Math.PI / 2 - 1.35, Math.PI / 2 + 1.35];
+  const lens = (u) => Math.sqrt(Math.max(0, 1 - (2 * u - 1) ** 2)); // 0 at the ends, 1 in the middle
+  const mouth = (extra = 0, k = 1) => (u) => {
+    const h = lens(u);
+    return [-0.52 - extra - 0.0 * h - 0.0, -0.52 + 0.0].map((_, n) => n === 0
+      ? -0.04 - (0.2 + extra) * h * k // lower edge dips in the middle
+      : -0.04 + (0.2 + extra) * h * k); // upper edge rises in the middle
+  };
+  // dark cavity
+  b.add('mouth', xform(ellipsoidPatch(...grow(1.03), ...th, mouth(0), 64, 8), { t: [0, cy, 0] }), dark);
+  // thick lips following the crescent edges
+  const lipTop = (u) => { const [, hi] = mouth(0)(u); return [hi - 0.015, hi + 0.12 * Math.max(lens(u), 0.2)]; };
+  const lipBot = (u) => { const [lo] = mouth(0)(u); return [lo - 0.12 * Math.max(lens(u), 0.2), lo + 0.015]; };
+  b.add('lip_top', xform(ellipsoidPatch(...grow(1.06), th[0] + 0.12, th[1] - 0.12, lipTop, 64, 4), { t: [0, cy, 0] }), wood);
+  b.add('lip_bottom', xform(ellipsoidPatch(...grow(1.06), th[0] + 0.12, th[1] - 0.12, lipBot, 64, 4), { t: [0, cy, 0] }), wood);
+  // carved scale bands around the crown
+  for (const y of [0.45, 0.65, 0.82]) {
+    b.add(`ridge${y}`, xform(torus(1.0, 0.018, 72, 8), {
+      t: [0, cy + R[1] * y, 0], s: [R[0] * Math.sqrt(1 - y * y) * 1.02, 1, R[2] * Math.sqrt(1 - y * y) * 1.02],
+    }), gold);
   }
-  // fish-head handle at the back
-  b.add('handle', xform(ellipsoid(0.13, 0.13, 0.32, 20, 12), { t: [0, cy + 0.08, -0.86] }), wood);
-  b.add('handle_eye', xform(ellipsoid(0.04, 0.04, 0.04, 8, 6), { t: [0.11, cy + 0.12, -1.0] }), gold);
-  b.add('handle_eye2', xform(ellipsoid(0.04, 0.04, 0.04, 8, 6), { t: [-0.11, cy + 0.12, -1.0] }), gold);
+  // fish head/tail handle at the back: short neck + upright fin, with a pearl
+  b.add('neck', xform(ellipsoid(0.2, 0.17, 0.3, 24, 14), { t: [0, cy + 0.1, -0.84] }), wood);
+  b.add('pearl', xform(ellipsoid(0.07, 0.07, 0.07, 12, 8), { t: [0, cy + 0.2, -1.1] }), gold);
 
   // Mallet resting on the cushion in front
   const mz = 0.8;
   b.add('mallet_handle', xform(cylinder(0.028, 0.022, 0, 0.7, 12), {
     t: [-0.3, 0.3, mz], rz: -Math.PI / 2,
   }), wood);
-  b.add('mallet_head', xform(ellipsoid(0.07, 0.07, 0.07), { t: [0.4, 0.3, mz] }), velvet);
+  b.add('mallet_head', xform(ellipsoid(0.1, 0.1, 0.1), { t: [0.4, 0.31, mz] }), velvet);
 
   await b.write('mo.glb');
 }
