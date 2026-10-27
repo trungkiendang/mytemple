@@ -241,66 +241,93 @@ class Builder {
   }
 }
 
-// ── Mõ: pale wooden fish dome on a lotus base, with a ball-head mallet ──
+// ── Mõ: lacquered red-brown fish dome (carved fish + scales) on a harlequin cushion ──
+function scaleTexture(doc, base) {
+  const rows = 16, cols = 22;
+  return pngTexture(doc, 'fish_scales', 256, 256, (u, v) => {
+    const rowf = v * rows, row = Math.floor(rowf);
+    const cu = u * cols + (row % 2) * 0.5;
+    const fx = cu - Math.floor(cu) - 0.5, fy = rowf - row - 0.5;
+    const d = Math.hypot(fx, fy);
+    const t = Math.min(1, Math.max(0, (d - 0.32) / 0.2));
+    const k = 1.08 - 0.5 * t * t * (3 - 2 * t);
+    return [base[0] * k, base[1] * k, base[2] * k];
+  });
+}
+
+function harlequinTexture(doc) {
+  return pngTexture(doc, 'cushion_diamonds', 256, 256, (u, v) => {
+    // diamonds: checker rotated 45 degrees
+    const a = Math.floor(u * 8 + v * 3), c = Math.floor(u * 8 - v * 3);
+    return (a + c) % 2 === 0 ? [196, 26, 30] : [236, 178, 44];
+  });
+}
+
 async function buildMo() {
   const b = new Builder();
+  const lacquer = [178, 66, 36];
   const wood = b.material('wood_bell', {
-    color: [1, 1, 1], rough: 0.6, tex: woodTexture(b.doc, [236, 196, 138]),
+    color: [1, 1, 1], rough: 0.4, tex: woodTexture(b.doc, lacquer),
   });
-  const woodDeep = b.material('wood_lotus', {
-    color: [1, 1, 1], rough: 0.6, tex: woodTexture(b.doc, [214, 166, 100]),
+  const scales = b.material('fish_scales', {
+    color: [1, 1, 1], rough: 0.4, tex: scaleTexture(b.doc, [188, 76, 42]),
   });
-  const dark = b.material('wood_dark', { color: [0.16, 0.08, 0.03], rough: 0.9 });
+  const dark = b.material('wood_dark', { color: [0.09, 0.03, 0.02], rough: 0.9 });
+  const cushion = b.material('cushion', { color: [1, 1, 1], rough: 0.7, tex: harlequinTexture(b.doc) });
+  const cream = b.material('mallet_head', { color: [0.95, 0.93, 0.86], rough: 0.5 });
 
-  // Lotus base: three rings of petals fanning out around the dome
-  const petal = (r, y, a, pitch, size) => xform(ellipsoid(size[0], size[1], size[2], 20, 12), {
-    t: [Math.cos(a) * r, y, Math.sin(a) * r], rx: pitch, ry: Math.PI / 2 - a,
-  });
-  const rings = [
-    { n: 11, r: 0.7, y: 0.1, pitch: 0.3, size: [0.17, 0.1, 0.2], off: 0 },
-    { n: 9, r: 0.56, y: 0.22, pitch: 0.15, size: [0.15, 0.09, 0.2], off: 0.35 },
-  ];
-  rings.forEach((g, ri) => {
-    for (let i = 0; i < g.n; i++) {
-      const a = (i / g.n) * Math.PI * 2 + g.off;
-      b.add(`petal${ri}_${i}`, petal(g.r, g.y, a, g.pitch, g.size), woodDeep);
-    }
-  });
+  // Puffy round cushion with red / gold diamonds
+  b.add('cushion', lathe([
+    [0, 0.04], [0.7, 0], [0.98, 0.08], [1.08, 0.24], [1.02, 0.4], [0.75, 0.5], [0.3, 0.52], [0, 0.48],
+  ], 64), cushion);
 
-  // Dome body
-  const R = [0.8, 0.58, 0.74];
-  const cy = 0.2 + R[1] * 0.86;
+  // Dome body, sitting slightly sunk into the cushion
+  const R = [0.82, 0.64, 0.78];
+  const cy = 0.46 + R[1] * 0.9;
   const grow = (k) => R.map((r) => r * k);
   b.add('body', xform(ellipsoid(R[0], R[1], R[2], 72, 40), { t: [0, cy, 0] }), wood);
 
-  // Small upright oval mouth on the front-right
   const lens = (u) => Math.sqrt(Math.max(0, 1 - (2 * u - 1) ** 2));
-  const mouthTh = [0.62, 0.92];
-  b.add('mouth_rim', xform(ellipsoidPatch(...grow(1.025), mouthTh[0] - 0.05, mouthTh[1] + 0.05,
-    (u) => [0.02 - 0.42 * lens(u) - 0.03, 0.02 + 0.42 * lens(u) + 0.03], 24, 8), { t: [0, cy, 0] }), woodDeep);
-  b.add('mouth', xform(ellipsoidPatch(...grow(1.04), ...mouthTh,
-    (u) => [0.02 - 0.36 * lens(u), 0.02 + 0.36 * lens(u)], 24, 8), { t: [0, cy, 0] }), dark);
+  // point on the dome surface at azimuth th (0 = +X, PI/2 = front) and height fraction yf
+  const surf = (th, yf, k = 1) => {
+    const sp = Math.sqrt(1 - yf * yf);
+    return [R[0] * sp * Math.cos(th) * k, cy + R[1] * yf, R[2] * sp * Math.sin(th) * k];
+  };
 
-  // Carved lotus relief on the front-left of the dome
-  const th = Math.PI / 2 + 0.6;
-  const yf = 0.2;
-  const sp = Math.sqrt(1 - yf * yf);
-  const P = [R[0] * sp * Math.cos(th) * 1.0, cy + R[1] * yf, R[2] * sp * Math.sin(th) * 1.0];
-  const flower = (part, rz, ty) => xform(xform(part, { t: [0, ty, 0], rz }), { ry: Math.PI / 2 - th, t: P });
-  [-0.9, -0.45, 0, 0.45, 0.9].forEach((ang, i) => {
-    const len = i === 2 ? 0.26 : 0.2;
-    b.add(`relief${i}`, flower(ellipsoid(0.075, len, 0.04, 12, 8), ang * 0.9, len * 0.9), woodDeep);
-  });
-  b.add('relief_core', xform(ellipsoid(0.08, 0.08, 0.05, 10, 8), { ry: Math.PI / 2 - th, t: P }), woodDeep);
+  // Carved fish flank on the right side: scale-covered body tapering to the tail
+  const fish = [-0.75, 1.0];
+  b.add('fish_body', xform(ellipsoidPatch(...grow(1.025), ...fish,
+    (u) => [0.05 - 0.5 * Math.pow(lens(u), 0.7), 0.05 + 0.5 * Math.pow(lens(u), 0.7)], 64, 10), { t: [0, cy, 0] }), scales);
+  // fish head: snout protruding toward the front-right, with a dark mouth line and an eye
+  const hth = 1.12, hy = -0.12;
+  const hp = surf(hth, hy, 1.1);
+  const outward = Math.PI / 2 - hth;
+  b.add('fish_head', xform(ellipsoid(0.2, 0.17, 0.4, 28, 16), { ry: outward, t: surf(hth, hy, 1.16) }), scales);
+  b.add('fish_mouth', xform(ellipsoid(0.13, 0.025, 0.06, 12, 8), {
+    ry: outward, t: surf(hth + 0.02, hy - 0.09, 1.3),
+  }), dark);
+  b.add('fish_eye', xform(ellipsoid(0.04, 0.04, 0.03, 10, 8), { ry: outward, t: surf(hth - 0.3, hy + 0.14, 1.07) }), dark);
+  // tail fin at the far end of the flank
+  b.add('fish_tail', xform(ellipsoid(0.06, 0.17, 0.2, 16, 10), { ry: Math.PI / 2 + 0.75, t: surf(-0.85, 0.05, 1.05) }), scales);
 
-  // Mallet: slim stick with a round wooden ball head, resting in front
-  const mz = 1.0;
-  b.add('mallet_handle', xform(cylinder(0.022, 0.016, 0, 1.05, 12), {
-    t: [-0.6, 0.1, mz], rz: -Math.PI / 2,
-  }), wood);
-  b.add('mallet_head', xform(ellipsoid(0.13, 0.13, 0.13, 24, 16), { t: [0.5, 0.13, mz] }), wood);
+  // Round hole on the opposite (left) side
+  const holeTh = [Math.PI - 0.62, Math.PI - 0.3];
+  b.add('hole_rim', xform(ellipsoidPatch(...grow(1.025), holeTh[0] - 0.05, holeTh[1] + 0.05,
+    (u) => [0.05 - 0.27 * lens(u), 0.05 + 0.27 * lens(u)], 24, 8), { t: [0, cy, 0] }), wood);
+  b.add('hole', xform(ellipsoidPatch(...grow(1.04), ...holeTh,
+    (u) => [0.05 - 0.21 * lens(u), 0.05 + 0.21 * lens(u)], 24, 8), { t: [0, cy, 0] }), dark);
+
+  // Mallet: dark wood handle with a cream ball head, resting on the cushion
+  b.add('mallet_handle', xform(cylinder(0.022, 0.016, 0, 1.1, 12), {
+    t: [-0.5, 0.56, 0.8], rz: -Math.PI / 2,
+  }), woodDark(b));
+  b.add('mallet_head', xform(ellipsoid(0.12, 0.12, 0.12, 24, 16), { t: [0.66, 0.58, 0.8] }), cream);
 
   await b.write('mo.glb');
+}
+
+function woodDark(b) {
+  return b.material('mallet_wood', { color: [0.3, 0.12, 0.06], rough: 0.5 });
 }
 
 // ── Lư hương: bronze censer with N incense sticks ─────────────────
