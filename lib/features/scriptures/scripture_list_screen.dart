@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/scripture.dart';
 import '../../services/firebase_service.dart';
 import '../../services/hive_service.dart';
+import '../../core/app_icons.dart';
 import '../../core/app_theme.dart';
 import 'scripture_detail_screen.dart';
 
@@ -18,8 +19,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
   late Future<List<Scripture>> _scripturesFuture;
   String? _selectedSect;
   String _searchQuery = '';
-
-  final List<String> _sects = ['Bắc tông', 'Nam tông', 'Khất sĩ', 'Mật tông'];
+  List<String> _sects = [];
 
   @override
   void initState() {
@@ -28,8 +28,11 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
   }
 
   void _fetchScriptures() {
-    _scripturesFuture =
-        _firebaseService.fetchScripturesFromFirebase(sect: _selectedSect);
+    _scripturesFuture = _firebaseService.fetchScriptures().then((list) {
+      final sects = <String>{for (final s in list) if (s.sect != null) s.sect!}.toList()..sort();
+      if (mounted) setState(() => _sects = sects);
+      return list;
+    });
   }
 
   @override
@@ -79,10 +82,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                   selected: _selectedSect == null,
                   onSelected: (selected) {
                     if (selected) {
-                      setState(() {
-                        _selectedSect = null;
-                        _fetchScriptures();
-                      });
+                      setState(() => _selectedSect = null);
                     }
                   },
                   selectedColor: AppTheme.woodBrown.withValues(alpha: 0.2),
@@ -96,10 +96,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                       label: Text(sect),
                       selected: _selectedSect == sect,
                       onSelected: (selected) {
-                        setState(() {
-                          _selectedSect = selected ? sect : null;
-                          _fetchScriptures();
-                        });
+                        setState(() => _selectedSect = selected ? sect : null);
                       },
                       selectedColor: AppTheme.woodBrown.withValues(alpha: 0.2),
                       checkmarkColor: AppTheme.woodBrown,
@@ -142,6 +139,10 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
 
                 final allScriptures = snapshot.data!;
                 final filteredScriptures = allScriptures.where((s) {
+                  if (_selectedSect != null &&
+                      (s.sect ?? '').toLowerCase() != _selectedSect!.toLowerCase()) {
+                    return false;
+                  }
                   return s.title.toLowerCase().contains(_searchQuery) ||
                       s.content.toLowerCase().contains(_searchQuery);
                 }).toList();
@@ -177,7 +178,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                             horizontal: 20, vertical: 8),
                         leading: const CircleAvatar(
                           backgroundColor: AppTheme.lightWood,
-                          child: Icon(Icons.book, color: AppTheme.darkWood),
+                          child: AppIcon.scripture(size: 22, color: AppTheme.darkWood),
                         ),
                         title: Row(
                           children: [

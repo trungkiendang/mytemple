@@ -12,6 +12,8 @@ import 'features/monk_bell/monk_bell_provider.dart';
 import 'features/monk_bell/monk_bell_screen.dart';
 import 'features/scriptures/scripture_list_screen.dart';
 import 'features/incense/incense_provider.dart';
+import 'core/app_icons.dart';
+import 'services/firebase_status.dart';
 import 'features/incense/incense_screen.dart';
 import 'features/calendar/event_provider.dart';
 import 'features/calendar/lunar_calendar_screen.dart';
@@ -49,6 +51,7 @@ void main() async {
     debugPrint('Firebase & Auth initialized successfully');
   } catch (e) {
     debugPrint('Firebase init/auth error: $e');
+    FirebaseStatus.report(e);
   }
 
   runApp(const MyApp());
@@ -108,19 +111,15 @@ class _MainScreenState extends State<MainScreen> {
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: AppTheme.darkWood,
-        unselectedItemColor: Colors.grey,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_active), label: 'Mõ'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Kinh'),
-          BottomNavigationBarItem(icon: Icon(Icons.wb_sunny), label: 'Hương'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Lịch'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Tôi'),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onItemTapped,
+        destinations: const [
+          NavigationDestination(icon: AppIcon.moBell(), label: 'Gõ mõ'),
+          NavigationDestination(icon: AppIcon.scripture(), label: 'Kinh'),
+          NavigationDestination(icon: AppIcon.incense(), label: 'Thắp hương'),
+          NavigationDestination(icon: AppIcon.lunar(), label: 'Lịch'),
+          NavigationDestination(icon: AppIcon.lotus(), label: 'Tôi'),
         ],
       ),
     );

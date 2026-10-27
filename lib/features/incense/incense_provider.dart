@@ -7,6 +7,15 @@ class IncenseProvider with ChangeNotifier {
   Timer? _timer;
   int _stickCount = 1;
   int _totalIncenseSeconds = 0;
+  String _petition = '';
+
+  /// Prayer attached to the incense (shown while burning).
+  String get petition => _petition;
+
+  void setPetition(String value) {
+    _petition = value.trim();
+    notifyListeners();
+  }
 
   bool get isBurning => _isBurning;
   int get remainingSeconds => _remainingSeconds;

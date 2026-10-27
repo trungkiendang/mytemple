@@ -165,6 +165,8 @@ class _IncenseScreenState extends State<IncenseScreen>
                       }
                     },
                     child: O3D(
+                      key: ValueKey('incense-${incenseProvider.stickCount}'),
+                      id: 'incense-${incenseProvider.stickCount}',
                       src: incenseProvider.modelSrc,
                       controller: _o3dController,
                       autoPlay: true,
@@ -264,8 +266,8 @@ class _IncenseScreenState extends State<IncenseScreen>
             ),
           ),
           Container(
-            padding: const EdgeInsets.fromLTRB(30, 20, 30, 40),
-            constraints: const BoxConstraints(minHeight: 345),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            constraints: const BoxConstraints(minHeight: 400),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
@@ -300,9 +302,25 @@ class _IncenseScreenState extends State<IncenseScreen>
                       _buildStickBtn(context, 5, '5'),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () => _editPetition(context, incenseProvider),
+                    icon: const Icon(Icons.edit_note, color: AppTheme.woodBrown),
+                    label: Text(
+                      incenseProvider.petition.isEmpty
+                          ? 'Gửi gắm lời nguyện (không bắt buộc)'
+                          : incenseProvider.petition,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppTheme.darkWood),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 44),
+                      side: BorderSide(color: AppTheme.woodBrown.withValues(alpha: 0.3)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                    ),
+                  ),
+                  const Divider(height: 28),
                   const Text(
                     'Thời gian thắp hương',
                     style: TextStyle(
@@ -311,7 +329,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                       color: AppTheme.darkWood,
                     ),
                   ),
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -320,7 +338,30 @@ class _IncenseScreenState extends State<IncenseScreen>
                       _buildDurationBtn(context, 15, '15 Phút'),
                     ],
                   ),
-                ] else
+                ] else ...[
+                  if (incenseProvider.petition.isNotEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppTheme.parchment,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text('Lời nguyện',
+                              style: TextStyle(fontSize: 12, color: AppTheme.lightWood, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text(
+                            incenseProvider.petition,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: AppTheme.darkWood),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -337,12 +378,36 @@ class _IncenseScreenState extends State<IncenseScreen>
                       ),
                     ),
                   ),
+                ],
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _editPetition(BuildContext context, IncenseProvider provider) async {
+    final controller = TextEditingController(text: provider.petition);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lời nguyện'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 120,
+          maxLines: 3,
+          decoration: const InputDecoration(hintText: 'Con xin nguyện cầu cho...'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Lưu')),
+        ],
+      ),
+    );
+    if (result != null) provider.setPetition(result);
+    controller.dispose();
   }
 
   Widget _buildStickBtn(BuildContext context, int count, String label) {

@@ -5,14 +5,15 @@
 ## 🌟 Tính năng chính
 
 ### 1. Gõ Mõ 3D & Tương tác
-- Mô hình Mõ 3D chân thực, phản hồi rung (Haptic) và âm thanh khi chạm.
-- Chế độ tự động gõ (Auto-tap) với tốc độ tùy chỉnh.
-- Theo dõi số lượng người đang cùng tu tập trực tuyến thời gian thực.
+- Mô hình mõ cá 3D (xoay tự động); **dùi gõ bám theo chuột / ngón tay** và vung xuống mỗi lần gõ, kèm hiệu ứng gợn sóng, "+1", rung (Haptic) và âm thanh.
+- Chế độ **tự động gõ** với 4 tốc độ (40 / 60 / 90 / 120 nhịp mỗi phút).
+- Số lượt gõ được lưu trên máy và đồng bộ lên Firebase theo từng người dùng.
+- Đếm số người đang cùng tu tập (dựa trên `lastActive` trong 3 phút gần nhất).
 
 ### 2. Thắp Hương 3D
-- Trải nghiệm thắp hương ảo với hiệu ứng khói 3D mượt mà.
+- Lư hương đồng 3D với 1 / 3 / 5 nén hương, hiệu ứng khói bay lên.
 - Hẹn giờ thắp hương (1, 5, 15 phút) và đếm ngược.
-- Gửi gắm những lời cầu nguyện (Petition) cùng mỗi nén hương.
+- Gửi gắm **lời nguyện** cùng nén hương (hiển thị trong lúc thắp).
 
 ### 3. Thư viện Kinh Văn & Phật Pháp
 - Chế độ **Hybrid**: Tải các bài kinh từ Firebase và lưu trữ cục bộ (Offline) qua Hive.
@@ -70,6 +71,12 @@ npm install
 node upload_to_firebase.js
 ```
 *(Yêu cầu file `serviceAccountKey.json` từ Firebase)*
+
+## 🚀 Phát hành
+- Web: merge vào `main` → GitHub Pages (`chant.iamkien.tech`).
+- Android/iOS lên chợ ứng dụng qua GitHub Actions: xem [`docs/STORE_PUBLISHING.md`](docs/STORE_PUBLISHING.md) (danh sách secrets/variables, script `scripts/setup_github_secrets.sh`).
+- Rà soát & thiết lập Firebase: [`docs/FIREBASE.md`](docs/FIREBASE.md). Build/CI: [`docs/BUILD.md`](docs/BUILD.md).
+- Icon ứng dụng sinh bằng `python3 scripts/generate_app_icon.py` rồi `dart run flutter_launcher_icons`.
 
 ## 📦 Cấu trúc thư mục
 

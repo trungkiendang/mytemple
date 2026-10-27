@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../../core/app_theme.dart';
 
 class LeaderboardScreen extends StatelessWidget {
@@ -13,7 +14,9 @@ class LeaderboardScreen extends StatelessWidget {
         backgroundColor: AppTheme.darkWood,
         foregroundColor: Colors.white,
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: Firebase.apps.isEmpty
+          ? _buildMockLeaderboard()
+          : StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
             .orderBy('tapCount', descending: true)

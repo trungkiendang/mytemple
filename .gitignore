@@ -46,3 +46,12 @@ app.*.map.json
 scripts/serviceAccountKey.json
 scripts/node_modules/
 .understand-anything/
+
+# Store publishing secrets (never commit)
+android/key.properties
+*.jks
+*.keystore
+*.p12
+*.p8
+*.mobileprovision
+.github/store.env

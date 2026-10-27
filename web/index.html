@@ -21,6 +21,10 @@
 
   <!-- 3D Model Viewer Support (bundled with o3d package) -->
   <script type="module" src="assets/packages/o3d/assets/model-viewer.min.js"></script>
+  <style>
+    /* Gõ mõ: let pointer events reach the Flutter layer above the 3D view */
+    #monk-bell { pointer-events: none; }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" defer></script>

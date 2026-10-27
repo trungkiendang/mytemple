@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../services/hive_service.dart';
+import '../../core/app_icons.dart';
 import '../../core/app_theme.dart';
+import '../../services/firebase_status.dart';
 import '../monk_bell/monk_bell_provider.dart';
 import '../incense/incense_provider.dart';
 import 'auth_provider.dart';
@@ -50,14 +52,20 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 20),
-              const CircleAvatar(
-                radius: 60,
-                backgroundColor: AppTheme.lightWood,
-                child: Icon(
-                  Icons.person,
-                  size: 80,
-                  color: AppTheme.darkWood,
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppTheme.woodBrown, AppTheme.darkWood],
+                  ),
+                  border: Border.all(color: AppTheme.antiqueGold, width: 3),
+                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 14, offset: Offset(0, 6))],
                 ),
+                child: const Center(child: AppIcon.lotus(size: 64, color: AppTheme.gold)),
               ),
               const SizedBox(height: 16),
               Text(
@@ -92,7 +100,7 @@ class ProfileScreen extends StatelessWidget {
                     child: _buildStatCard(
                       'Tổng lượt gõ mõ',
                       monkBellProvider.tapCount.toString(),
-                      Icons.notifications,
+                      const AppIcon.moBell(size: 28, color: AppTheme.woodBrown),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -100,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
                     child: _buildStatCard(
                       'Thời gian thắp hương',
                       incenseProvider.totalIncenseFormatted,
-                      Icons.fireplace,
+                      const AppIcon.incense(size: 28, color: AppTheme.woodBrown),
                     ),
                   ),
                 ],
@@ -109,10 +117,35 @@ class ProfileScreen extends StatelessWidget {
               _buildStatCard(
                 'Ngày tham gia',
                 DateFormat('dd/MM/yyyy').format(HiveService.joinDate()),
-                Icons.calendar_today,
+                const Icon(Icons.calendar_today, color: AppTheme.woodBrown, size: 28),
                 isFullWidth: true,
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+              ValueListenableBuilder<String?>(
+                valueListenable: FirebaseStatus.issue,
+                builder: (context, issue, _) => Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: (issue == null ? AppTheme.forestGreen : Colors.orange).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(issue == null ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                          color: issue == null ? AppTheme.forestGreen : Colors.orange.shade800),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          issue ?? 'Đã kết nối máy chủ — dữ liệu được đồng bộ.',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.darkWood),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // Settings
               ListTile(
@@ -285,7 +318,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, {bool isFullWidth = false}) {
+  Widget _buildStatCard(String label, String value, Widget icon, {bool isFullWidth = false}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -302,7 +335,7 @@ class ProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: isFullWidth ? CrossAxisAlignment.center : CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppTheme.woodBrown, size: 28),
+          icon,
           const SizedBox(height: 12),
           Text(
             value,

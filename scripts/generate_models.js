@@ -1,5 +1,5 @@
 // Procedurally builds the 3D models used by the app (assets/models/*.glb):
-//   mo.glb          wooden fish (mõ) on a red cushion, with its mallet
+//   mo.glb          wooden fish (mõ) on a red cushion (the mallet is a 2D overlay in the app)
 //   incense_N.glb   bronze censer (lư hương) holding N incense sticks (1, 3, 5)
 // Usage: cd scripts && npm install && node generate_models.js
 const path = require('path');
@@ -364,7 +364,6 @@ async function buildMo() {
   const cushion = b.material('cushion', { color: [1, 1, 1], rough: 0.7, tex: harlequinTexture(b.doc) });
   const cream = b.material('mallet_head', { color: [0.95, 0.93, 0.86], rough: 0.5 });
   const gold = b.material('gold', { color: [0.95, 0.72, 0.25], metal: 0.85, rough: 0.3 });
-  const handleWood = b.material('mallet_wood', { color: [0.3, 0.12, 0.06], rough: 0.5 });
 
   // Puffy round cushion with red / gold diamonds
   b.add('cushion', lathe([
@@ -465,11 +464,7 @@ async function buildMo() {
   b.add('hole', place(ellipsoidPatch(...grow(1.045), ...holeTh,
     (u) => [0.02 - 0.23 * lens(u), 0.02 + 0.23 * lens(u)], 24, 8), 1.045), dark);
 
-  // Mallet: dark handle with a cream ball head, resting across the cushion
-  b.add('mallet_handle', xform(cylinder(0.022, 0.016, 0, 1.2, 12), { t: [1.02, 0.56, -0.55], rx: Math.PI / 2 }), handleWood);
-  b.add('mallet_head', xform(ellipsoid(0.12, 0.12, 0.12, 24, 16), { t: [1.02, 0.58, 0.77] }), cream);
-
-  b.add('mallet_collar', xform(torus(0.03, 0.012, 16, 8), { rx: Math.PI / 2, t: [1.02, 0.58, 0.62] }), gold);
+  // The mallet is drawn by the app (2D overlay that follows the mouse / touch).
 
   await b.write('mo.glb');
 }
