@@ -47,7 +47,7 @@ class _SmokePainter extends CustomPainter {
       final sway = (wobble - 0.5) * 2 * 0.03;
       final opacity = p.opacity * (1 - p.life);
       final paint = Paint()
-        ..color = Colors.white.withOpacity(opacity * 0.3)
+        ..color = Colors.white.withValues(alpha: opacity * 0.3)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
       canvas.drawCircle(
         Offset(
@@ -192,7 +192,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
                     ),
@@ -224,11 +224,11 @@ class _IncenseScreenState extends State<IncenseScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 40, vertical: 20),
                         decoration: BoxDecoration(
-                          color: AppTheme.darkWood.withOpacity(0.9),
+                          color: AppTheme.darkWood.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(50),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.orange.withOpacity(0.3),
+                              color: Colors.orange.withValues(alpha: 0.3),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
@@ -266,7 +266,7 @@ class _IncenseScreenState extends State<IncenseScreen>
               borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, -10),
                 ),
@@ -355,11 +355,11 @@ class _IncenseScreenState extends State<IncenseScreen>
           color: isSelected ? AppTheme.woodBrown : Colors.white,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected ? AppTheme.darkWood : AppTheme.woodBrown.withOpacity(0.3),
+            color: isSelected ? AppTheme.darkWood : AppTheme.woodBrown.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: AppTheme.darkWood.withOpacity(0.3), blurRadius: 8)]
+              ? [BoxShadow(color: AppTheme.darkWood.withValues(alpha: 0.3), blurRadius: 8)]
               : null,
         ),
         child: Text(
@@ -382,9 +382,9 @@ class _IncenseScreenState extends State<IncenseScreen>
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: AppTheme.woodBrown.withOpacity(0.1),
+              color: AppTheme.woodBrown.withValues(alpha: 0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.woodBrown.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.woodBrown.withValues(alpha: 0.2)),
             ),
             child: const Icon(Icons.timer_outlined, color: AppTheme.woodBrown),
           ),

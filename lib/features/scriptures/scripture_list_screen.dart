@@ -85,7 +85,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                       });
                     }
                   },
-                  selectedColor: AppTheme.woodBrown.withOpacity(0.2),
+                  selectedColor: AppTheme.woodBrown.withValues(alpha: 0.2),
                   checkmarkColor: AppTheme.woodBrown,
                 ),
                 const SizedBox(width: 8),
@@ -101,7 +101,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                           _fetchScriptures();
                         });
                       },
-                      selectedColor: AppTheme.woodBrown.withOpacity(0.2),
+                      selectedColor: AppTheme.woodBrown.withValues(alpha: 0.2),
                       checkmarkColor: AppTheme.woodBrown,
                     ),
                   );
@@ -166,7 +166,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -195,7 +195,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.woodBrown.withOpacity(0.1),
+                                  color: AppTheme.woodBrown.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
