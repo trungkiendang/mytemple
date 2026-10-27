@@ -3,7 +3,7 @@
     "short_name": "My Chùa",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#F5F5DC",
+    "background_color": "#2A1710",
     "theme_color": "#3E2723",
     "description": "My Chùa - Ứng dụng Tâm linh Online",
     "orientation": "portrait-primary",

@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../models/scripture.dart';
+import 'firebase_status.dart';
 
 class FirebaseService {
   FirebaseFirestore? _firestore;
@@ -12,41 +16,39 @@ class FirebaseService {
     }
   }
 
-  Future<List<Scripture>> fetchScripturesFromFirebase({String? sect}) async {
-    if (_firestore == null) {
-      debugPrint('Firestore not available, returning mock data');
-      return _getMockScriptures();
-    }
-
-    try {
-      Query query = _firestore!.collection('scriptures');
-      if (sect != null && sect.isNotEmpty) {
-        query = query.where('sect', isEqualTo: sect);
+  /// Scriptures from Firestore; when it is unreachable or denied, falls back to the
+  /// copy bundled with the app (assets/data/scriptures.json) so the library always works.
+  Future<List<Scripture>> fetchScriptures() async {
+    if (_firestore != null) {
+      try {
+        final snapshot = await _firestore!.collection('scriptures').get();
+        final list = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return Scripture(
+            id: doc.id,
+            title: data['title'] ?? 'Không tiêu đề',
+            content: data['content'] ?? '',
+            sect: data['sect'],
+          );
+        }).toList();
+        if (list.isNotEmpty) return list;
+      } catch (e) {
+        debugPrint('Error fetching scriptures, using bundled copy: $e');
+        FirebaseStatus.issue.value ??= 'Không đọc được kinh từ máy chủ (kiểm tra Firestore Rules): dùng bản kèm theo ứng dụng.';
       }
-
-      QuerySnapshot snapshot = await query.get();
-      return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return Scripture(
-          id: doc.id,
-          title: data['title'] ?? 'Không tiêu đề',
-          content: data['content'] ?? 'Không nội dung',
-          sect: data['sect'],
-        );
-      }).toList();
-    } catch (e) {
-      debugPrint('Error fetching scriptures: $e');
-      return _getMockScriptures();
     }
+    return _bundledScriptures();
   }
 
-  List<Scripture> _getMockScriptures() {
-    return [
-      Scripture(
-        id: 'mock-1',
-        title: 'Chú Đại Bi (Đang kết nối...)',
-        content: 'Nội dung sẽ được tải khi Firebase sẵn sàng...',
-      ),
-    ];
+  Future<List<Scripture>> _bundledScriptures() async {
+    final raw = await rootBundle.loadString('assets/data/scriptures.json');
+    return (jsonDecode(raw) as List)
+        .map((e) => Scripture(
+              id: e['id'] as String,
+              title: e['title'] as String,
+              content: e['content'] as String,
+              sect: e['sect'] as String?,
+            ))
+        .toList();
   }
 }

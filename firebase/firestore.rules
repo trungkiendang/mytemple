@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Scripture library: public read, content managed only via the Admin SDK (scripts/upload_to_firebase.js)
+    match /scriptures/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Global counters: anyone signed in may add taps; nothing else can change
+    match /stats/global_stats {
+      allow read: if true;
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['total_taps'])
+        && request.resource.data.total_taps >= resource.data.total_taps
+        && request.resource.data.total_taps - resource.data.total_taps <= 500;
+    }
+
+    // Per-user profile used by the leaderboard + presence (lastActive)
+    match /users/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+
+      match /user_events/{eventId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}
