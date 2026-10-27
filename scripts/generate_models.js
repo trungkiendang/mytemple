@@ -348,7 +348,7 @@ function scaleTexture(doc, base) {
 function harlequinTexture(doc) {
   return pngTexture(doc, 'cushion_diamonds', 256, 256, (u, v) => {
     // diamonds: checker rotated 45 degrees
-    const a = Math.floor(u * 8 + v * 3), c = Math.floor(u * 8 - v * 3);
+    const a = Math.floor(u * 8), c = Math.floor(v * 4);
     return (a + c) % 2 === 0 ? [196, 26, 30] : [236, 178, 44];
   });
 }

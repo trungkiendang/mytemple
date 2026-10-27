@@ -12,6 +12,19 @@ class HiveService {
     await Hive.openBox('settings');
   }
 
+  /// First launch date, stored once so the profile can show a real join date.
+  static DateTime joinDate() {
+    final box = Hive.box('settings');
+    final stored = box.get('join_date') as String?;
+    if (stored != null) {
+      final parsed = DateTime.tryParse(stored);
+      if (parsed != null) return parsed;
+    }
+    final now = DateTime.now();
+    box.put('join_date', now.toIso8601String());
+    return now;
+  }
+
   static Future<void> saveScripture(Scripture scripture) async {
     var box = Hive.box<Scripture>('scriptures');
     await box.put(scripture.id, scripture);

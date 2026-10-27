@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../services/hive_service.dart';
 import '../../core/app_theme.dart';
 import '../monk_bell/monk_bell_provider.dart';
 import '../incense/incense_provider.dart';
@@ -106,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 16),
               _buildStatCard(
                 'Ngày tham gia',
-                '20/05/2024',
+                DateFormat('dd/MM/yyyy').format(HiveService.joinDate()),
                 Icons.calendar_today,
                 isFullWidth: true,
               ),
