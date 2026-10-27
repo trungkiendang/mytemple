@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../services/hive_service.dart';
 import '../../core/app_theme.dart';
 import '../monk_bell/monk_bell_provider.dart';
 import '../incense/incense_provider.dart';
@@ -72,7 +74,7 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppTheme.woodBrown.withOpacity(0.1),
+                  color: AppTheme.woodBrown.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -106,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 16),
               _buildStatCard(
                 'Ngày tham gia',
-                '20/05/2024',
+                DateFormat('dd/MM/yyyy').format(HiveService.joinDate()),
                 Icons.calendar_today,
                 isFullWidth: true,
               ),
@@ -291,7 +293,7 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -315,7 +317,7 @@ class ProfileScreen extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.darkWood.withOpacity(0.6),
+              color: AppTheme.darkWood.withValues(alpha: 0.6),
             ),
           ),
         ],

@@ -112,7 +112,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
                               leading: CircleAvatar(
-                                backgroundColor: AppTheme.woodBrown.withOpacity(0.1),
+                                backgroundColor: AppTheme.woodBrown.withValues(alpha: 0.1),
                                 child: Icon(
                                   event.isLunar ? Icons.brightness_2 : Icons.calendar_today,
                                   color: AppTheme.woodBrown,
@@ -168,7 +168,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
                     title: const Text('Lặp theo lịch âm'),
                     value: isLunar,
                     onChanged: (value) => setState(() => isLunar = value),
-                    activeColor: AppTheme.woodBrown,
+                    activeThumbColor: AppTheme.woodBrown,
                   ),
                 ],
               ),
@@ -253,7 +253,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
                   DateFormat('yyyy').format(_focusedDay),
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.darkWood.withOpacity(0.6),
+                    color: AppTheme.darkWood.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -273,7 +273,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.woodBrown.withOpacity(0.05),
+        color: AppTheme.woodBrown.withValues(alpha: 0.05),
         border: Border(
           bottom: BorderSide(color: Colors.grey.shade300, width: 0.5),
         ),
@@ -339,7 +339,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
                   boxShadow: [
                     if (!isToday)
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: Colors.black.withValues(alpha: 0.02),
                         blurRadius: 2,
                         offset: const Offset(0, 1),
                       ),
@@ -347,7 +347,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
                   border: isSpecialDay
                       ? Border.all(color: Colors.orange.shade300, width: 1)
                       : (hasEvents
-                          ? Border.all(color: AppTheme.woodBrown.withOpacity(0.2), width: 1)
+                          ? Border.all(color: AppTheme.woodBrown.withValues(alpha: 0.2), width: 1)
                           : Border.all(color: Colors.grey.shade100, width: 0.5)),
                 ),
                 child: Stack(
@@ -422,7 +422,7 @@ class _LunarCalendarScreenState extends State<LunarCalendarScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))
         ],
       ),
       child: Row(

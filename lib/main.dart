@@ -18,6 +18,9 @@ import 'features/calendar/lunar_calendar_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/profile/auth_provider.dart';
 
+// Don't block startup when Firebase is unreachable; providers fall back to mock data.
+const _firebaseTimeout = Duration(seconds: 6);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -36,13 +39,13 @@ void main() async {
           projectId: "temple-a6cf8",
           storageBucket: "temple-a6cf8.appspot.com",
         ),
-      );
+      ).timeout(_firebaseTimeout);
     } else {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp().timeout(_firebaseTimeout);
     }
     
     // Tự động đăng nhập ẩn danh để vượt qua Rules của Firestore
-    await FirebaseAuth.instance.signInAnonymously();
+    await FirebaseAuth.instance.signInAnonymously().timeout(_firebaseTimeout);
     debugPrint('Firebase & Auth initialized successfully');
   } catch (e) {
     debugPrint('Firebase init/auth error: $e');

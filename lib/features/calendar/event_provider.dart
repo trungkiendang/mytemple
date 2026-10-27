@@ -6,8 +6,8 @@ import '../../services/hive_service.dart';
 
 class EventProvider extends ChangeNotifier {
   List<CalendarEvent> _events = [];
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<CalendarEvent> get events => _events;
 

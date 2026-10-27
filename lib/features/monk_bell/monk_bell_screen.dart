@@ -107,7 +107,7 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
-                          color: AppTheme.darkWood.withOpacity(0.85),
+                          color: AppTheme.darkWood.withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: const [
                             BoxShadow(
@@ -168,9 +168,9 @@ class _MonkBellScreenState extends State<MonkBellScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.darkWood.withOpacity(0.2)),
+                      border: Border.all(color: AppTheme.darkWood.withValues(alpha: 0.2)),
                     ),
                     child: const Text(
                       'Chạm trực tiếp vào vật thể để gõ',
@@ -196,7 +196,7 @@ class _MonkBellScreenState extends State<MonkBellScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5)
         ],
       ),
       child: Row(

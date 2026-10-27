@@ -47,7 +47,7 @@ class _SmokePainter extends CustomPainter {
       final sway = (wobble - 0.5) * 2 * 0.03;
       final opacity = p.opacity * (1 - p.life);
       final paint = Paint()
-        ..color = Colors.white.withOpacity(opacity * 0.3)
+        ..color = const Color(0xFFA89F94).withValues(alpha: opacity * 0.6)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
       canvas.drawCircle(
         Offset(
@@ -101,7 +101,8 @@ class _IncenseScreenState extends State<IncenseScreen>
   }
 
   _SmokeParticle _createParticle(double life, int stickCount) {
-    const baseY = 0.38;
+    // Ember tips sit at about 28% of the view height with the camera above.
+    const baseY = 0.28;
     final spread = switch (stickCount) { 3 => 0.1, 5 => 0.15, _ => 0.04 };
     return _SmokeParticle(
       x: 0.5 + (_random.nextDouble() - 0.5) * spread,
@@ -169,6 +170,10 @@ class _IncenseScreenState extends State<IncenseScreen>
                       autoPlay: true,
                       autoRotate: true,
                       cameraControls: true,
+                      disableZoom: true,
+                      cameraOrbit: CameraOrbit(30, 80, 4),
+                      cameraTarget: CameraTarget(0, 0.75, 0),
+                      fieldOfView: '30deg',
                       disableTap: true,
                       backgroundColor: Colors.transparent,
                       loading: Loading.eager,
@@ -192,7 +197,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
                     ),
@@ -216,19 +221,18 @@ class _IncenseScreenState extends State<IncenseScreen>
 
                 if (incenseProvider.isBurning)
                   Positioned(
-                    top: 60,
-                    left: 0,
-                    right: 0,
+                    top: 16,
+                    left: 16,
                     child: Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 20),
+                            horizontal: 18, vertical: 8),
                         decoration: BoxDecoration(
-                          color: AppTheme.darkWood.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(50),
+                          color: AppTheme.darkWood.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.orange.withOpacity(0.3),
+                              color: Colors.orange.withValues(alpha: 0.3),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
@@ -239,15 +243,15 @@ class _IncenseScreenState extends State<IncenseScreen>
                             Text(
                               incenseProvider.remainingTimeFormatted,
                               style: const TextStyle(
-                                fontSize: 48,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.orangeAccent,
                               ),
                             ),
                             const Text(
-                              'Đang thắp hương nguyện cầu...',
+                              'Đang nguyện cầu',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 10,
                                 color: Colors.white70,
                               ),
                             ),
@@ -261,12 +265,13 @@ class _IncenseScreenState extends State<IncenseScreen>
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(30, 20, 30, 40),
+            constraints: const BoxConstraints(minHeight: 345),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, -10),
                 ),
@@ -346,7 +351,7 @@ class _IncenseScreenState extends State<IncenseScreen>
     return GestureDetector(
       onTap: () {
         provider.setStickCount(count);
-        _o3dController.cameraTarget(0, 0, 0);
+        _o3dController.cameraTarget(0, 0.75, 0);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -355,11 +360,11 @@ class _IncenseScreenState extends State<IncenseScreen>
           color: isSelected ? AppTheme.woodBrown : Colors.white,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected ? AppTheme.darkWood : AppTheme.woodBrown.withOpacity(0.3),
+            color: isSelected ? AppTheme.darkWood : AppTheme.woodBrown.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: AppTheme.darkWood.withOpacity(0.3), blurRadius: 8)]
+              ? [BoxShadow(color: AppTheme.darkWood.withValues(alpha: 0.3), blurRadius: 8)]
               : null,
         ),
         child: Text(
@@ -382,9 +387,9 @@ class _IncenseScreenState extends State<IncenseScreen>
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: AppTheme.woodBrown.withOpacity(0.1),
+              color: AppTheme.woodBrown.withValues(alpha: 0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.woodBrown.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.woodBrown.withValues(alpha: 0.2)),
             ),
             child: const Icon(Icons.timer_outlined, color: AppTheme.woodBrown),
           ),
