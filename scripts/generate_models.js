@@ -73,6 +73,33 @@ function ellipsoid(rx, ry, rz, seg = 40, rings = 24) {
   return p;
 }
 
+// Rectangular patch of an ellipsoid surface: theta around Y (front = +Z = PI/2),
+// y1..y0 are heights as a fraction (-1..1) of the vertical radius.
+function ellipsoidPatch(rx, ry, rz, th0, th1, y0, y1, seg = 40, rings = 6) {
+  const p = newPart();
+  const a0 = Math.acos(y1), a1 = Math.acos(y0); // phi from top
+  for (let i = 0; i <= rings; i++) {
+    const phi = a0 + (a1 - a0) * (i / rings);
+    for (let j = 0; j <= seg; j++) {
+      const th = th0 + (th1 - th0) * (j / seg);
+      const x = Math.sin(phi) * Math.cos(th), y = Math.cos(phi), z = Math.sin(phi) * Math.sin(th);
+      p.pos.push(x * rx, y * ry, z * rz);
+      const nx = x / rx, ny = y / ry, nz = z / rz;
+      const l = Math.hypot(nx, ny, nz);
+      p.nor.push(nx / l, ny / l, nz / l);
+      p.uv.push(j / seg, i / rings);
+    }
+  }
+  for (let i = 0; i < rings; i++) {
+    for (let j = 0; j < seg; j++) {
+      const a = i * (seg + 1) + j;
+      const b = a + seg + 1;
+      p.idx.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  }
+  return p;
+}
+
 // Torus lying in the XZ plane (axis = Y).
 function torus(R, r, seg = 48, tube = 12) {
   const p = newPart();
@@ -158,6 +185,23 @@ function woodTexture(doc, base) {
 }
 
 // ── Scene building ────────────────────────────────────────────────
+// Make triangles counter-clockwise as seen from outside (glTF front faces):
+// flips the winding when the face normals mostly oppose the vertex normals.
+function orient(part) {
+  let dot = 0;
+  const { pos, nor, idx } = part;
+  for (let t = 0; t < idx.length; t += 3) {
+    const [a, b, c] = [idx[t] * 3, idx[t + 1] * 3, idx[t + 2] * 3];
+    const u = [pos[b] - pos[a], pos[b + 1] - pos[a + 1], pos[b + 2] - pos[a + 2]];
+    const w = [pos[c] - pos[a], pos[c + 1] - pos[a + 1], pos[c + 2] - pos[a + 2]];
+    const f = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    dot += f[0] * nor[a] + f[1] * nor[a + 1] + f[2] * nor[a + 2];
+  }
+  if (dot < 0) {
+    for (let t = 0; t < idx.length; t += 3) [idx[t + 1], idx[t + 2]] = [idx[t + 2], idx[t + 1]];
+  }
+}
+
 class Builder {
   constructor() {
     this.doc = new Document();
@@ -177,6 +221,7 @@ class Builder {
 
   add(name, part, mat) {
     const d = this.doc;
+    orient(part);
     const acc = (type, arr, Arr) => d.createAccessor().setType(type).setArray(new Arr(arr)).setBuffer(this.buf);
     const prim = d.createPrimitive()
       .setAttribute('POSITION', acc('VEC3', part.pos, Float32Array))
@@ -198,10 +243,10 @@ class Builder {
 async function buildMo() {
   const b = new Builder();
   const wood = b.material('wood_bell', {
-    color: [1, 1, 1], rough: 0.8, tex: woodTexture(b.doc, [200, 120, 55]),
+    color: [1, 1, 1], rough: 0.55, tex: woodTexture(b.doc, [185, 80, 40]),
   });
-  const dark = b.material('wood_dark', { color: [0.12, 0.05, 0.02], rough: 0.8 });
-  const velvet = b.material('cushion', { color: [0.62, 0.07, 0.08], rough: 0.95 });
+  const dark = b.material('wood_dark', { color: [0.1, 0.04, 0.02], rough: 0.9 });
+  const velvet = b.material('cushion', { color: [0.42, 0.03, 0.04], rough: 1 });
   const gold = b.material('gold', { color: [0.95, 0.72, 0.25], metal: 0.9, rough: 0.3 });
 
   // Round red cushion with a gold rim
@@ -210,17 +255,24 @@ async function buildMo() {
   ], 64), velvet);
   b.add('cushion_rim', xform(torus(1.0, 0.02, 64, 8), { t: [0, 0.07, 0] }), gold);
 
-  // Fish body: a hollow-looking sphere, slightly flattened side to side
-  const cy = 0.25 + 0.55;
-  b.add('body', xform(ellipsoid(0.62, 0.55, 0.7, 56, 32), { t: [0, cy, 0] }), wood);
-  // Mouth slit on the front (+Z)
-  b.add('slit', xform(ellipsoid(0.4, 0.035, 0.1), { t: [0, cy - 0.12, 0.675] }), dark);
-  // Decorative ridge around the body
-  b.add('ridge', xform(torus(0.6, 0.025, 64, 8), { t: [0, cy + 0.18, 0], s: [1, 1, 1.12] }), gold);
-  // Head knob on top (the handle of a real mõ)
-  b.add('knob', xform(ellipsoid(0.14, 0.12, 0.14), { t: [0, cy + 0.55, 0] }), wood);
-  // Fish tail at the back
-  b.add('tail', xform(ellipsoid(0.2, 0.17, 0.12), { t: [0, cy - 0.05, -0.7] }), wood);
+  // Monk's round wooden fish: lacquered dome with a wide mouth slit across the front
+  const cy = 0.25 + 0.6;
+  const R = [0.78, 0.62, 0.74];
+  b.add('body', xform(ellipsoid(R[0], R[1], R[2], 64, 36), { t: [0, cy, 0] }), wood);
+  const front = [Math.PI / 2 - 1.25, Math.PI / 2 + 1.25];
+  const grow = (k) => R.map((r) => r * k);
+  // wide dark mouth with raised lips above and below
+  b.add('mouth', xform(ellipsoidPatch(...grow(1.03), ...front, -0.34, -0.1, 48, 5), { t: [0, cy, 0] }), dark);
+  b.add('lip_top', xform(ellipsoidPatch(...grow(1.05), front[0] + 0.25, front[1] - 0.25, -0.1, 0.02, 48, 3), { t: [0, cy, 0] }), wood);
+  b.add('lip_bottom', xform(ellipsoidPatch(...grow(1.05), front[0] + 0.25, front[1] - 0.25, -0.46, -0.34, 48, 3), { t: [0, cy, 0] }), wood);
+  // carved ridges around the crown
+  for (const [y, k] of [[0.42, 0.86], [0.6, 0.66], [0.78, 0.42]]) {
+    b.add(`ridge${y}`, xform(torus(R[0] * Math.sqrt(1 - y * y) * 1.02, 0.022, 64, 8), { t: [0, cy + R[1] * y, 0], s: [1, 1, R[2] / R[0]] }), gold);
+  }
+  // fish-head handle at the back
+  b.add('handle', xform(ellipsoid(0.13, 0.13, 0.32, 20, 12), { t: [0, cy + 0.08, -0.86] }), wood);
+  b.add('handle_eye', xform(ellipsoid(0.04, 0.04, 0.04, 8, 6), { t: [0.11, cy + 0.12, -1.0] }), gold);
+  b.add('handle_eye2', xform(ellipsoid(0.04, 0.04, 0.04, 8, 6), { t: [-0.11, cy + 0.12, -1.0] }), gold);
 
   // Mallet resting on the cushion in front
   const mz = 0.8;
@@ -239,7 +291,7 @@ async function buildIncense(count) {
   const b = new Builder();
   const bronze = b.material('bronze', { color: [0.55, 0.32, 0.1], metal: 0.55, rough: 0.5 });
   const gold = b.material('gold', { color: [0.95, 0.75, 0.3], metal: 0.9, rough: 0.3 });
-  const ash = b.material('ash', { color: [0.55, 0.53, 0.5], rough: 1 });
+  const ash = b.material('ash', { color: [0.32, 0.3, 0.28], rough: 1 });
   const stick = b.material('stick', { color: [0.55, 0.14, 0.08], rough: 0.9 });
   const ember = b.material('ember', {
     color: [0.95, 0.25, 0.05], rough: 0.4, emissive: [2.5, 0.6, 0.1],
