@@ -248,6 +248,47 @@ class Builder {
 }
 
 // ── Mõ: teardrop fish dome with carved scaled fish, on a harlequin cushion ──
+// Tube along a polyline; radius(t) tapers it (t = 0..1). Used for whiskers, brows, gill lines.
+function tube(points, radius, seg = 8) {
+  const p = newPart();
+  const n = points.length;
+  const norm = (v) => { const l = Math.hypot(...v) || 1; return v.map((x) => x / l); };
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  for (let i = 0; i < n; i++) {
+    const a = points[Math.max(i - 1, 0)], c = points[Math.min(i + 1, n - 1)];
+    const T = norm([c[0] - a[0], c[1] - a[1], c[2] - a[2]]);
+    const up = Math.abs(T[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+    const N = norm(cross(T, up));
+    const B = cross(T, N);
+    const r = radius(i / (n - 1));
+    for (let j = 0; j <= seg; j++) {
+      const ang = (j / seg) * Math.PI * 2;
+      const nx = Math.cos(ang), ny = Math.sin(ang);
+      const d = [N[0] * nx + B[0] * ny, N[1] * nx + B[1] * ny, N[2] * nx + B[2] * ny];
+      p.pos.push(points[i][0] + d[0] * r, points[i][1] + d[1] * r, points[i][2] + d[2] * r);
+      p.nor.push(...d);
+      p.uv.push(j / seg, i / (n - 1));
+    }
+  }
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < seg; j++) {
+      const a = i * (seg + 1) + j, b = a + seg + 1;
+      p.idx.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  }
+  return p;
+}
+
+// Quadratic bezier sampled into a polyline.
+function bezier(p0, p1, p2, n = 12) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t;
+    out.push([0, 1, 2].map((k) => a * p0[k] + b * p1[k] + c * p2[k]));
+  }
+  return out;
+}
+
 // ── Teardrop deformation (back of the dome stays round, front tapers into a snout) ──
 function deformPoint([x, y, z], R) {
   const zn = Math.max(0, z / R[2]);
@@ -322,12 +363,15 @@ async function buildMo() {
   const dark = b.material('wood_dark', { color: [0.09, 0.03, 0.02], rough: 0.9 });
   const cushion = b.material('cushion', { color: [1, 1, 1], rough: 0.7, tex: harlequinTexture(b.doc) });
   const cream = b.material('mallet_head', { color: [0.95, 0.93, 0.86], rough: 0.5 });
+  const gold = b.material('gold', { color: [0.95, 0.72, 0.25], metal: 0.85, rough: 0.3 });
   const handleWood = b.material('mallet_wood', { color: [0.3, 0.12, 0.06], rough: 0.5 });
 
   // Puffy round cushion with red / gold diamonds
   b.add('cushion', lathe([
     [0, 0.04], [0.8, 0], [1.12, 0.08], [1.22, 0.26], [1.15, 0.44], [0.85, 0.54], [0.35, 0.56], [0, 0.52],
   ], 64), cushion);
+  b.add('cushion_piping', xform(torus(1.2, 0.028, 72, 8), { t: [0, 0.27, 0] }), gold);
+  b.add('cushion_button', xform(ellipsoid(0.07, 0.05, 0.07, 14, 8), { t: [0, 0.52, 0] }), gold);
 
   // Teardrop dome: round at the back, tapering into the fish snout at the front (+Z)
   const R = [0.82, 0.66, 0.8];
@@ -341,30 +385,78 @@ async function buildMo() {
 
   b.add('body', place(ellipsoid(R[0], R[1], R[2], 72, 44)), wood);
 
-  // Carved fish on the right flank: dark carved outline + scale-covered body.
+  // Carved fish on the right flank: dark carved outline, scaled body, smooth head.
   // u runs from the tail (back, 0) to the head (front, 1); the centre line climbs toward the tail.
-  const thTail = -1.0, thHead = 1.15;
+  const thTail = -1.0, thHead = 1.15, thGill = 0.45;
   const centre = (u) => 0.42 - 0.62 * u;
   const half = (u, m) => m * (0.12 + 0.88 * Math.pow(lens(u * 0.92 + 0.04), 0.8));
+  const uOf = (th) => (th - thTail) / (thHead - thTail);
+  // yRange for a sub-range [t0, t1] of theta, expressed with the global fish parameter
+  const sub = (t0, t1, m) => (u) => {
+    const g = uOf(t0 + (t1 - t0) * u);
+    return [centre(g) - half(g, m), centre(g) + half(g, m)];
+  };
   b.add('fish_outline', place(ellipsoidPatch(...grow(1.02), thTail - 0.06, thHead + 0.05,
-    (u) => [centre(u) - half(u, 0.5), centre(u) + half(u, 0.5)], 72, 10), 1.02), carved);
-  b.add('fish_scales', place(ellipsoidPatch(...grow(1.035), thTail, thHead,
-    (u) => [centre(u) - half(u, 0.4), centre(u) + half(u, 0.4)], 72, 10), 1.035), scales);
+    sub(thTail - 0.06, thHead + 0.05, 0.5), 72, 10), 1.02), carved);
+  b.add('fish_scales', place(ellipsoidPatch(...grow(1.035), thTail, thGill,
+    sub(thTail, thGill, 0.4), 64, 10), 1.035), scales);
+  b.add('fish_head', place(ellipsoidPatch(...grow(1.04), thGill, thHead,
+    sub(thGill, thHead, 0.4), 40, 10), 1.04), wood);
 
-  // Snout details at the front tip
+  // point on the finished surface at azimuth th / height fraction yf (pushed out by k)
+  const surf = (th, yf, k = 1.0) => {
+    const sp = Math.sqrt(1 - yf * yf);
+    return lift(at([R[0] * sp * Math.cos(th) * k, R[1] * yf, R[2] * sp * Math.sin(th) * k]));
+  };
+  const faceOut = (th) => ({ ry: Math.PI / 2 - th });
+
+  // Gill lines: three carved arcs behind the head
+  [0.5, 0.4, 0.3].forEach((th, i) => {
+    const pts = [];
+    for (let k = 0; k <= 10; k++) {
+      const yf = -0.3 + (k / 10) * 0.55;
+      pts.push(surf(th - 0.05 * Math.sin((k / 10) * Math.PI), yf, 1.045));
+    }
+    b.add(`gill${i}`, tube(pts, (t) => 0.014 * Math.sin(Math.PI * Math.min(1, t * 0.85 + 0.08)) + 0.004), carved);
+  });
+
+  // Head: snout, jaws, nostrils, brow, eye, whiskers
   const tip = lift(at([0, -0.12 * R[1], R[2] * 0.985]));
-  b.add('mouth', xform(ellipsoid(0.16, 0.03, 0.09, 16, 8), { t: [tip[0], tip[1] - 0.06, tip[2] - 0.03] }), dark);
-  b.add('upper_jaw', xform(ellipsoid(0.17, 0.05, 0.14, 16, 10), { t: [tip[0], tip[1] + 0.0, tip[2] - 0.08] }), scales);
-  b.add('lower_jaw', xform(ellipsoid(0.15, 0.045, 0.12, 16, 10), { t: [tip[0], tip[1] - 0.13, tip[2] - 0.09] }), scales);
+  b.add('mouth', xform(ellipsoid(0.18, 0.032, 0.1, 16, 8), { t: [tip[0], tip[1] - 0.06, tip[2] - 0.03] }), dark);
+  b.add('upper_jaw', xform(ellipsoid(0.19, 0.055, 0.15, 16, 10), { t: [tip[0], tip[1] + 0.0, tip[2] - 0.08] }), wood);
+  b.add('lower_jaw', xform(ellipsoid(0.17, 0.05, 0.13, 16, 10), { t: [tip[0], tip[1] - 0.13, tip[2] - 0.09] }), wood);
   for (const sx of [-1, 1]) {
-    b.add(`nostril${sx}`, xform(ellipsoid(0.025, 0.02, 0.025, 8, 6), { t: [tip[0] + sx * 0.07, tip[1] + 0.1, tip[2] - 0.15] }), dark);
+    b.add(`nostril${sx}`, xform(ellipsoid(0.03, 0.024, 0.03, 8, 6), { t: [tip[0] + sx * 0.08, tip[1] + 0.11, tip[2] - 0.16] }), dark);
+    // whiskers curling forward and out
+    const w = [[0, 0.02, -0.06], [sx * 0.16, 0.05, 0.14], [sx * 0.34, -0.04, 0.2]];
+    b.add(`whisker${sx}`, tube(bezier(
+      [tip[0] + sx * 0.12 + w[0][0], tip[1] - 0.02, tip[2] + w[0][2]],
+      [tip[0] + w[1][0] + sx * 0.12, tip[1] + w[1][1], tip[2] + w[1][2]],
+      [tip[0] + w[2][0] + sx * 0.12, tip[1] + w[2][1] - 0.1, tip[2] + w[2][2]]), (t) => 0.024 * (1 - t) + 0.006, 8), carved);
   }
-  // Eye: raised ring + dark pupil on the right flank near the head
-  const eyeTh = 0.95, eyeY = 0.08;
-  const sp = Math.sqrt(1 - eyeY * eyeY);
-  const eyeP = lift(at([R[0] * sp * Math.cos(eyeTh) * 1.04, R[1] * eyeY, R[2] * sp * Math.sin(eyeTh) * 1.04]));
-  b.add('eye_ring', xform(torus(0.06, 0.016, 20, 8), { rx: Math.PI / 2, ry: Math.PI / 2 - eyeTh, t: eyeP }), carved);
-  b.add('eye', xform(ellipsoid(0.035, 0.035, 0.02, 10, 8), { ry: Math.PI / 2 - eyeTh, t: eyeP }), dark);
+  const eyeTh = 0.88, eyeY = 0.1;
+  const eyeP = surf(eyeTh, eyeY, 1.045);
+  b.add('eye_ring', xform(torus(0.07, 0.02, 24, 8), { rx: Math.PI / 2, ...faceOut(eyeTh), t: eyeP }), carved);
+  b.add('eye', xform(ellipsoid(0.045, 0.045, 0.025, 12, 8), { ...faceOut(eyeTh), t: eyeP }), dark);
+  b.add('eye_glint', xform(ellipsoid(0.012, 0.012, 0.008, 6, 4), {
+    ...faceOut(eyeTh), t: [eyeP[0] + 0.02, eyeP[1] + 0.02, eyeP[2] + 0.015],
+  }), cream);
+  const brow = [];
+  for (let k = 0; k <= 10; k++) {
+    const t = k / 10;
+    brow.push(surf(eyeTh + 0.14 - 0.34 * t, eyeY + 0.2 + 0.09 * Math.sin(Math.PI * t), 1.05));
+  }
+  b.add('brow', tube(brow, (t) => 0.02 * Math.sin(Math.PI * (t * 0.9 + 0.05)) + 0.004), carved);
+
+  // Tail: a fan of three flat fins curling off the top-back end of the fish
+  const tp = surf(thTail - 0.05, 0.5, 1.02);
+  [-0.6, 0, 0.6].forEach((rz, i) => {
+    const fin = xform(xform(ellipsoid(0.03, 0.14, 0.08, 12, 8), { t: [0, 0.1, 0], rz }), { ...faceOut(thTail - 0.05), t: tp });
+    b.add(`tail${i}`, fin, scales);
+  });
+  // Pectoral fin below the head
+  const fp = surf(0.1, -0.22, 1.03);
+  b.add('fin', xform(xform(ellipsoid(0.04, 0.13, 0.22, 12, 8), { t: [0, -0.02, 0.0], rz: 0.3 }), { ...faceOut(0.1), t: fp }), scales);
 
   // Round hole with a raised rim on the left-back flank
   const holeTh = [Math.PI + 0.05, Math.PI + 0.4];
@@ -376,6 +468,8 @@ async function buildMo() {
   // Mallet: dark handle with a cream ball head, resting across the cushion
   b.add('mallet_handle', xform(cylinder(0.022, 0.016, 0, 1.2, 12), { t: [1.02, 0.56, -0.55], rx: Math.PI / 2 }), handleWood);
   b.add('mallet_head', xform(ellipsoid(0.12, 0.12, 0.12, 24, 16), { t: [1.02, 0.58, 0.77] }), cream);
+
+  b.add('mallet_collar', xform(torus(0.03, 0.012, 16, 8), { rx: Math.PI / 2, t: [1.02, 0.58, 0.62] }), gold);
 
   await b.write('mo.glb');
 }
