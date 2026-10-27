@@ -181,7 +181,7 @@ function hash(x, y) {
 function woodTexture(doc, base) {
   return pngTexture(doc, 'wood_grain', 256, 256, (u, v) => {
     const ring = Math.sin(v * 70 + Math.sin(u * 12 + v * 5) * 2.2) * 0.5 + 0.5;
-    const k = 0.72 + ring * 0.22 + (hash(Math.floor(u * 256), Math.floor(v * 256)) - 0.5) * 0.06;
+    const k = 0.88 + ring * 0.1 + (hash(Math.floor(u * 256), Math.floor(v * 256)) - 0.5) * 0.06;
     return [base[0] * k, base[1] * k, base[2] * k];
   });
 }
@@ -241,58 +241,64 @@ class Builder {
   }
 }
 
-// ── Mõ: wooden fish on a cushion, with mallet ─────────────────────
+// ── Mõ: pale wooden fish dome on a lotus base, with a ball-head mallet ──
 async function buildMo() {
   const b = new Builder();
   const wood = b.material('wood_bell', {
-    color: [1, 1, 1], rough: 0.55, tex: woodTexture(b.doc, [185, 80, 40]),
+    color: [1, 1, 1], rough: 0.6, tex: woodTexture(b.doc, [236, 196, 138]),
   });
-  const dark = b.material('wood_dark', { color: [0.1, 0.04, 0.02], rough: 0.9 });
-  const velvet = b.material('cushion', { color: [0.42, 0.03, 0.04], rough: 1 });
-  const gold = b.material('gold', { color: [0.95, 0.72, 0.25], metal: 0.9, rough: 0.3 });
+  const woodDeep = b.material('wood_lotus', {
+    color: [1, 1, 1], rough: 0.6, tex: woodTexture(b.doc, [214, 166, 100]),
+  });
+  const dark = b.material('wood_dark', { color: [0.16, 0.08, 0.03], rough: 0.9 });
 
-  // Round red cushion with a gold rim
-  b.add('cushion', lathe([
-    [0, 0], [0.9, 0], [1.0, 0.05], [1.02, 0.12], [0.95, 0.2], [0.7, 0.24], [0, 0.25],
-  ], 64), velvet);
-  b.add('cushion_rim', xform(torus(1.0, 0.02, 64, 8), { t: [0, 0.07, 0] }), gold);
+  // Lotus base: three rings of petals fanning out around the dome
+  const petal = (r, y, a, pitch, size) => xform(ellipsoid(size[0], size[1], size[2], 20, 12), {
+    t: [Math.cos(a) * r, y, Math.sin(a) * r], rx: pitch, ry: Math.PI / 2 - a,
+  });
+  const rings = [
+    { n: 11, r: 0.7, y: 0.1, pitch: 0.3, size: [0.17, 0.1, 0.2], off: 0 },
+    { n: 9, r: 0.56, y: 0.22, pitch: 0.15, size: [0.15, 0.09, 0.2], off: 0.35 },
+  ];
+  rings.forEach((g, ri) => {
+    for (let i = 0; i < g.n; i++) {
+      const a = (i / g.n) * Math.PI * 2 + g.off;
+      b.add(`petal${ri}_${i}`, petal(g.r, g.y, a, g.pitch, g.size), woodDeep);
+    }
+  });
 
-  // Monk's round wooden fish: flattened lacquered dome, crescent-shaped mouth across the front
-  const R = [0.86, 0.6, 0.8];
-  const cy = 0.25 + R[1] * 0.92;
+  // Dome body
+  const R = [0.8, 0.58, 0.74];
+  const cy = 0.2 + R[1] * 0.86;
   const grow = (k) => R.map((r) => r * k);
   b.add('body', xform(ellipsoid(R[0], R[1], R[2], 72, 40), { t: [0, cy, 0] }), wood);
-  const th = [Math.PI / 2 - 1.35, Math.PI / 2 + 1.35];
-  const lens = (u) => Math.sqrt(Math.max(0, 1 - (2 * u - 1) ** 2)); // 0 at the ends, 1 in the middle
-  const mouth = (extra = 0, k = 1) => (u) => {
-    const h = lens(u);
-    return [-0.52 - extra - 0.0 * h - 0.0, -0.52 + 0.0].map((_, n) => n === 0
-      ? -0.04 - (0.2 + extra) * h * k // lower edge dips in the middle
-      : -0.04 + (0.2 + extra) * h * k); // upper edge rises in the middle
-  };
-  // dark cavity
-  b.add('mouth', xform(ellipsoidPatch(...grow(1.03), ...th, mouth(0), 64, 8), { t: [0, cy, 0] }), dark);
-  // thick lips following the crescent edges
-  const lipTop = (u) => { const [, hi] = mouth(0)(u); return [hi - 0.015, hi + 0.12 * Math.max(lens(u), 0.2)]; };
-  const lipBot = (u) => { const [lo] = mouth(0)(u); return [lo - 0.12 * Math.max(lens(u), 0.2), lo + 0.015]; };
-  b.add('lip_top', xform(ellipsoidPatch(...grow(1.06), th[0] + 0.12, th[1] - 0.12, lipTop, 64, 4), { t: [0, cy, 0] }), wood);
-  b.add('lip_bottom', xform(ellipsoidPatch(...grow(1.06), th[0] + 0.12, th[1] - 0.12, lipBot, 64, 4), { t: [0, cy, 0] }), wood);
-  // carved scale bands around the crown
-  for (const y of [0.45, 0.65, 0.82]) {
-    b.add(`ridge${y}`, xform(torus(1.0, 0.018, 72, 8), {
-      t: [0, cy + R[1] * y, 0], s: [R[0] * Math.sqrt(1 - y * y) * 1.02, 1, R[2] * Math.sqrt(1 - y * y) * 1.02],
-    }), gold);
-  }
-  // fish head/tail handle at the back: short neck + upright fin, with a pearl
-  b.add('neck', xform(ellipsoid(0.2, 0.17, 0.3, 24, 14), { t: [0, cy + 0.1, -0.84] }), wood);
-  b.add('pearl', xform(ellipsoid(0.07, 0.07, 0.07, 12, 8), { t: [0, cy + 0.2, -1.1] }), gold);
 
-  // Mallet resting on the cushion in front
-  const mz = 0.8;
-  b.add('mallet_handle', xform(cylinder(0.028, 0.022, 0, 0.7, 12), {
-    t: [-0.3, 0.3, mz], rz: -Math.PI / 2,
+  // Small upright oval mouth on the front-right
+  const lens = (u) => Math.sqrt(Math.max(0, 1 - (2 * u - 1) ** 2));
+  const mouthTh = [0.62, 0.92];
+  b.add('mouth_rim', xform(ellipsoidPatch(...grow(1.025), mouthTh[0] - 0.05, mouthTh[1] + 0.05,
+    (u) => [0.02 - 0.42 * lens(u) - 0.03, 0.02 + 0.42 * lens(u) + 0.03], 24, 8), { t: [0, cy, 0] }), woodDeep);
+  b.add('mouth', xform(ellipsoidPatch(...grow(1.04), ...mouthTh,
+    (u) => [0.02 - 0.36 * lens(u), 0.02 + 0.36 * lens(u)], 24, 8), { t: [0, cy, 0] }), dark);
+
+  // Carved lotus relief on the front-left of the dome
+  const th = Math.PI / 2 + 0.6;
+  const yf = 0.2;
+  const sp = Math.sqrt(1 - yf * yf);
+  const P = [R[0] * sp * Math.cos(th) * 1.0, cy + R[1] * yf, R[2] * sp * Math.sin(th) * 1.0];
+  const flower = (part, rz, ty) => xform(xform(part, { t: [0, ty, 0], rz }), { ry: Math.PI / 2 - th, t: P });
+  [-0.9, -0.45, 0, 0.45, 0.9].forEach((ang, i) => {
+    const len = i === 2 ? 0.26 : 0.2;
+    b.add(`relief${i}`, flower(ellipsoid(0.075, len, 0.04, 12, 8), ang * 0.9, len * 0.9), woodDeep);
+  });
+  b.add('relief_core', xform(ellipsoid(0.08, 0.08, 0.05, 10, 8), { ry: Math.PI / 2 - th, t: P }), woodDeep);
+
+  // Mallet: slim stick with a round wooden ball head, resting in front
+  const mz = 1.0;
+  b.add('mallet_handle', xform(cylinder(0.022, 0.016, 0, 1.05, 12), {
+    t: [-0.6, 0.1, mz], rz: -Math.PI / 2,
   }), wood);
-  b.add('mallet_head', xform(ellipsoid(0.1, 0.1, 0.1), { t: [0.4, 0.31, mz] }), velvet);
+  b.add('mallet_head', xform(ellipsoid(0.13, 0.13, 0.13, 24, 16), { t: [0.5, 0.13, mz] }), wood);
 
   await b.write('mo.glb');
 }
