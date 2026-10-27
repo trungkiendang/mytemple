@@ -209,6 +209,12 @@ class Builder {
     this.doc = new Document();
     this.buf = this.doc.createBuffer();
     this.scene = this.doc.createScene();
+    this.root = this.doc.createNode('root');
+    this.scene.addChild(this.root);
+  }
+
+  yaw(a) {
+    this.root.setRotation([0, Math.sin(a / 2), 0, Math.cos(a / 2)]);
   }
 
   material(name, { color, metal = 0, rough = 0.6, emissive, tex }) {
@@ -232,7 +238,7 @@ class Builder {
       .setIndices(acc('SCALAR', part.idx, Uint16Array))
       .setMaterial(mat);
     const mesh = d.createMesh(name).addPrimitive(prim);
-    this.scene.addChild(d.createNode(name).setMesh(mesh));
+    this.root.addChild(d.createNode(name).setMesh(mesh));
   }
 
   async write(file) {
@@ -241,7 +247,50 @@ class Builder {
   }
 }
 
-// ── Mõ: lacquered red-brown fish dome (carved fish + scales) on a harlequin cushion ──
+// ── Mõ: teardrop fish dome with carved scaled fish, on a harlequin cushion ──
+// ── Teardrop deformation (back of the dome stays round, front tapers into a snout) ──
+function deformPoint([x, y, z], R) {
+  const zn = Math.max(0, z / R[2]);
+  const taper = 1 - 0.3 * Math.pow(zn, 1.4);
+  return [x * taper, y * taper - R[1] * 0.3 * zn * zn, z * (1 + 0.2 * zn)];
+}
+
+function recomputeNormals(part) {
+  const { pos, idx } = part;
+  const acc = new Map();
+  const key = (i) => [0, 1, 2].map((k) => Math.round(pos[i * 3 + k] * 1e4)).join(',');
+  const faces = [];
+  for (let t = 0; t < idx.length; t += 3) {
+    const [a, b, c] = [idx[t], idx[t + 1], idx[t + 2]];
+    const u = [0, 1, 2].map((k) => pos[b * 3 + k] - pos[a * 3 + k]);
+    const w = [0, 1, 2].map((k) => pos[c * 3 + k] - pos[a * 3 + k]);
+    const f = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    for (const i of [a, b, c]) {
+      const k = key(i);
+      const v = acc.get(k) || [0, 0, 0];
+      acc.set(k, [v[0] + f[0], v[1] + f[1], v[2] + f[2]]);
+    }
+  }
+  part.nor = [];
+  for (let i = 0; i < pos.length / 3; i++) {
+    const v = acc.get(key(i)) || [0, 1, 0];
+    const l = Math.hypot(...v) || 1;
+    part.nor.push(v[0] / l, v[1] / l, v[2] / l);
+  }
+  return faces;
+}
+
+// Orient the winding outwards, deform the vertices, then rebuild smooth normals.
+function deform(part, R) {
+  orient(part);
+  for (let i = 0; i < part.pos.length; i += 3) {
+    const p = deformPoint([part.pos[i], part.pos[i + 1], part.pos[i + 2]], R);
+    part.pos[i] = p[0]; part.pos[i + 1] = p[1]; part.pos[i + 2] = p[2];
+  }
+  recomputeNormals(part);
+  return part;
+}
+
 function scaleTexture(doc, base) {
   const rows = 16, cols = 22;
   return pngTexture(doc, 'fish_scales', 256, 256, (u, v) => {
@@ -265,69 +314,70 @@ function harlequinTexture(doc) {
 
 async function buildMo() {
   const b = new Builder();
+  b.yaw(-0.6);
   const lacquer = [178, 66, 36];
-  const wood = b.material('wood_bell', {
-    color: [1, 1, 1], rough: 0.4, tex: woodTexture(b.doc, lacquer),
-  });
-  const scales = b.material('fish_scales', {
-    color: [1, 1, 1], rough: 0.4, tex: scaleTexture(b.doc, [188, 76, 42]),
-  });
+  const wood = b.material('wood_bell', { color: [1, 1, 1], rough: 0.4, tex: woodTexture(b.doc, lacquer) });
+  const scales = b.material('fish_scales', { color: [1, 1, 1], rough: 0.4, tex: scaleTexture(b.doc, [188, 76, 42]) });
+  const carved = b.material('carved_edge', { color: [0.42, 0.14, 0.07], rough: 0.55 });
   const dark = b.material('wood_dark', { color: [0.09, 0.03, 0.02], rough: 0.9 });
   const cushion = b.material('cushion', { color: [1, 1, 1], rough: 0.7, tex: harlequinTexture(b.doc) });
   const cream = b.material('mallet_head', { color: [0.95, 0.93, 0.86], rough: 0.5 });
+  const handleWood = b.material('mallet_wood', { color: [0.3, 0.12, 0.06], rough: 0.5 });
 
   // Puffy round cushion with red / gold diamonds
   b.add('cushion', lathe([
-    [0, 0.04], [0.7, 0], [0.98, 0.08], [1.08, 0.24], [1.02, 0.4], [0.75, 0.5], [0.3, 0.52], [0, 0.48],
+    [0, 0.04], [0.8, 0], [1.12, 0.08], [1.22, 0.26], [1.15, 0.44], [0.85, 0.54], [0.35, 0.56], [0, 0.52],
   ], 64), cushion);
 
-  // Dome body, sitting slightly sunk into the cushion
-  const R = [0.82, 0.64, 0.78];
-  const cy = 0.46 + R[1] * 0.9;
+  // Teardrop dome: round at the back, tapering into the fish snout at the front (+Z)
+  const R = [0.82, 0.66, 0.8];
+  const cy = 0.5 + R[1] * 0.82;
+  const at = (p) => deformPoint(p, R);
+  const lift = ([x, y, z]) => [x, y + cy, z];
   const grow = (k) => R.map((r) => r * k);
-  b.add('body', xform(ellipsoid(R[0], R[1], R[2], 72, 40), { t: [0, cy, 0] }), wood);
-
   const lens = (u) => Math.sqrt(Math.max(0, 1 - (2 * u - 1) ** 2));
-  // point on the dome surface at azimuth th (0 = +X, PI/2 = front) and height fraction yf
-  const surf = (th, yf, k = 1) => {
-    const sp = Math.sqrt(1 - yf * yf);
-    return [R[0] * sp * Math.cos(th) * k, cy + R[1] * yf, R[2] * sp * Math.sin(th) * k];
-  };
+  // patch/part builder: ellipsoid-based part → deformed → lifted
+  const place = (part, k = 1) => xform(deform(part, grow(k)), { t: [0, cy, 0] });
 
-  // Carved fish flank on the right side: scale-covered body tapering to the tail
-  const fish = [-0.75, 1.0];
-  b.add('fish_body', xform(ellipsoidPatch(...grow(1.025), ...fish,
-    (u) => [0.05 - 0.5 * Math.pow(lens(u), 0.7), 0.05 + 0.5 * Math.pow(lens(u), 0.7)], 64, 10), { t: [0, cy, 0] }), scales);
-  // fish head: snout protruding toward the front-right, with a dark mouth line and an eye
-  const hth = 1.12, hy = -0.12;
-  const hp = surf(hth, hy, 1.1);
-  const outward = Math.PI / 2 - hth;
-  b.add('fish_head', xform(ellipsoid(0.2, 0.17, 0.4, 28, 16), { ry: outward, t: surf(hth, hy, 1.16) }), scales);
-  b.add('fish_mouth', xform(ellipsoid(0.13, 0.025, 0.06, 12, 8), {
-    ry: outward, t: surf(hth + 0.02, hy - 0.09, 1.3),
-  }), dark);
-  b.add('fish_eye', xform(ellipsoid(0.04, 0.04, 0.03, 10, 8), { ry: outward, t: surf(hth - 0.3, hy + 0.14, 1.07) }), dark);
-  // tail fin at the far end of the flank
-  b.add('fish_tail', xform(ellipsoid(0.06, 0.17, 0.2, 16, 10), { ry: Math.PI / 2 + 0.75, t: surf(-0.85, 0.05, 1.05) }), scales);
+  b.add('body', place(ellipsoid(R[0], R[1], R[2], 72, 44)), wood);
 
-  // Round hole on the opposite (left) side
-  const holeTh = [Math.PI - 0.62, Math.PI - 0.3];
-  b.add('hole_rim', xform(ellipsoidPatch(...grow(1.025), holeTh[0] - 0.05, holeTh[1] + 0.05,
-    (u) => [0.05 - 0.27 * lens(u), 0.05 + 0.27 * lens(u)], 24, 8), { t: [0, cy, 0] }), wood);
-  b.add('hole', xform(ellipsoidPatch(...grow(1.04), ...holeTh,
-    (u) => [0.05 - 0.21 * lens(u), 0.05 + 0.21 * lens(u)], 24, 8), { t: [0, cy, 0] }), dark);
+  // Carved fish on the right flank: dark carved outline + scale-covered body.
+  // u runs from the tail (back, 0) to the head (front, 1); the centre line climbs toward the tail.
+  const thTail = -1.0, thHead = 1.15;
+  const centre = (u) => 0.42 - 0.62 * u;
+  const half = (u, m) => m * (0.12 + 0.88 * Math.pow(lens(u * 0.92 + 0.04), 0.8));
+  b.add('fish_outline', place(ellipsoidPatch(...grow(1.02), thTail - 0.06, thHead + 0.05,
+    (u) => [centre(u) - half(u, 0.5), centre(u) + half(u, 0.5)], 72, 10), 1.02), carved);
+  b.add('fish_scales', place(ellipsoidPatch(...grow(1.035), thTail, thHead,
+    (u) => [centre(u) - half(u, 0.4), centre(u) + half(u, 0.4)], 72, 10), 1.035), scales);
 
-  // Mallet: dark wood handle with a cream ball head, resting on the cushion
-  b.add('mallet_handle', xform(cylinder(0.022, 0.016, 0, 1.1, 12), {
-    t: [-0.5, 0.56, 0.8], rz: -Math.PI / 2,
-  }), woodDark(b));
-  b.add('mallet_head', xform(ellipsoid(0.12, 0.12, 0.12, 24, 16), { t: [0.66, 0.58, 0.8] }), cream);
+  // Snout details at the front tip
+  const tip = lift(at([0, -0.12 * R[1], R[2] * 0.985]));
+  b.add('mouth', xform(ellipsoid(0.16, 0.03, 0.09, 16, 8), { t: [tip[0], tip[1] - 0.06, tip[2] - 0.03] }), dark);
+  b.add('upper_jaw', xform(ellipsoid(0.17, 0.05, 0.14, 16, 10), { t: [tip[0], tip[1] + 0.0, tip[2] - 0.08] }), scales);
+  b.add('lower_jaw', xform(ellipsoid(0.15, 0.045, 0.12, 16, 10), { t: [tip[0], tip[1] - 0.13, tip[2] - 0.09] }), scales);
+  for (const sx of [-1, 1]) {
+    b.add(`nostril${sx}`, xform(ellipsoid(0.025, 0.02, 0.025, 8, 6), { t: [tip[0] + sx * 0.07, tip[1] + 0.1, tip[2] - 0.15] }), dark);
+  }
+  // Eye: raised ring + dark pupil on the right flank near the head
+  const eyeTh = 0.95, eyeY = 0.08;
+  const sp = Math.sqrt(1 - eyeY * eyeY);
+  const eyeP = lift(at([R[0] * sp * Math.cos(eyeTh) * 1.04, R[1] * eyeY, R[2] * sp * Math.sin(eyeTh) * 1.04]));
+  b.add('eye_ring', xform(torus(0.06, 0.016, 20, 8), { rx: Math.PI / 2, ry: Math.PI / 2 - eyeTh, t: eyeP }), carved);
+  b.add('eye', xform(ellipsoid(0.035, 0.035, 0.02, 10, 8), { ry: Math.PI / 2 - eyeTh, t: eyeP }), dark);
+
+  // Round hole with a raised rim on the left-back flank
+  const holeTh = [Math.PI + 0.05, Math.PI + 0.4];
+  b.add('hole_rim', place(ellipsoidPatch(...grow(1.03), holeTh[0] - 0.06, holeTh[1] + 0.06,
+    (u) => [0.02 - 0.3 * lens(u), 0.02 + 0.3 * lens(u)], 24, 8), 1.03), carved);
+  b.add('hole', place(ellipsoidPatch(...grow(1.045), ...holeTh,
+    (u) => [0.02 - 0.23 * lens(u), 0.02 + 0.23 * lens(u)], 24, 8), 1.045), dark);
+
+  // Mallet: dark handle with a cream ball head, resting across the cushion
+  b.add('mallet_handle', xform(cylinder(0.022, 0.016, 0, 1.2, 12), { t: [1.02, 0.56, -0.55], rx: Math.PI / 2 }), handleWood);
+  b.add('mallet_head', xform(ellipsoid(0.12, 0.12, 0.12, 24, 16), { t: [1.02, 0.58, 0.77] }), cream);
 
   await b.write('mo.glb');
-}
-
-function woodDark(b) {
-  return b.material('mallet_wood', { color: [0.3, 0.12, 0.06], rough: 0.5 });
 }
 
 // ── Lư hương: bronze censer with N incense sticks ─────────────────
