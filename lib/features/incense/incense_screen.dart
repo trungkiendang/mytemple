@@ -101,7 +101,8 @@ class _IncenseScreenState extends State<IncenseScreen>
   }
 
   _SmokeParticle _createParticle(double life, int stickCount) {
-    const baseY = 0.38;
+    // Ember tips sit at about 28% of the view height with the camera above.
+    const baseY = 0.28;
     final spread = switch (stickCount) { 3 => 0.1, 5 => 0.15, _ => 0.04 };
     return _SmokeParticle(
       x: 0.5 + (_random.nextDouble() - 0.5) * spread,
@@ -169,6 +170,10 @@ class _IncenseScreenState extends State<IncenseScreen>
                       autoPlay: true,
                       autoRotate: true,
                       cameraControls: true,
+                      disableZoom: true,
+                      cameraOrbit: CameraOrbit(30, 80, 3),
+                      cameraTarget: CameraTarget(0, 0.95, 0),
+                      fieldOfView: '30deg',
                       disableTap: true,
                       backgroundColor: Colors.transparent,
                       loading: Loading.eager,
@@ -216,7 +221,7 @@ class _IncenseScreenState extends State<IncenseScreen>
 
                 if (incenseProvider.isBurning)
                   Positioned(
-                    top: 60,
+                    bottom: 16,
                     left: 0,
                     right: 0,
                     child: Center(
@@ -346,7 +351,7 @@ class _IncenseScreenState extends State<IncenseScreen>
     return GestureDetector(
       onTap: () {
         provider.setStickCount(count);
-        _o3dController.cameraTarget(0, 0, 0);
+        _o3dController.cameraTarget(0, 0.95, 0);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

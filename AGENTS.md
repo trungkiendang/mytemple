@@ -36,7 +36,7 @@ Hive boxes: `scriptures` (typeId 0), `events` (typeId 1), `settings` (untyped). 
 
 ### Assets
 - 3D models: `assets/models/mo.glb`, `assets/models/incense_bowl.glb`
-- Audio: `assets/audio/bell_sound.mp3`
+- Audio: `assets/audio/bell_sound.wav`
 
 ### Scripts Firestore Seeder
 Node.js script at `scripts/upload_to_firebase.js`. Uses `firebase-admin`. Data source: `docs/firebase_seed.json`. Collections seeded: `scriptures`, `stats/global_stats`.

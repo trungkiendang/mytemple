@@ -48,7 +48,7 @@ class MonkBellProvider with ChangeNotifier {
     
     // Play sound
     try {
-      await player.play(AssetSource('audio/bell_sound.mp3'));
+      await player.play(AssetSource('audio/bell_sound.wav'));
     } catch (_) {}
 
     // Haptic Feedback (Chạy tốt cả trên iOS/Android/Web nếu trình duyệt hỗ trợ)
