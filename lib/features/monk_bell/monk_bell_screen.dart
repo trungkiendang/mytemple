@@ -72,8 +72,14 @@ class _MonkBellScreenState extends State<MonkBellScreen>
       c.dispose();
     });
     // little bounce of the 3D model
-    _controller.cameraTarget(0, 0.06, 0);
-    Future.delayed(const Duration(milliseconds: 70), () => _controller.cameraTarget(0, 0, 0));
+    try {
+      _controller.cameraTarget(0, 0.06, 0);
+      Future.delayed(const Duration(milliseconds: 70), () {
+        try {
+          _controller.cameraTarget(0, 0, 0);
+        } catch (_) {}
+      });
+    } catch (_) {} // the web view may not expose the controller
   }
 
   void _onPointerMove(Offset p) => setState(() => _pointer = p);

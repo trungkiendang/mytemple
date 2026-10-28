@@ -1,8 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
+import 'incense_effects.dart';
 import 'incense_provider.dart';
 import 'prayer_provider.dart';
 import 'prayer_widgets.dart';
@@ -17,119 +16,22 @@ class IncenseScreen extends StatefulWidget {
   State<IncenseScreen> createState() => _IncenseScreenState();
 }
 
-class _SmokeParticle {
-  double x;
-  double y;
-  double size;
-  double opacity;
-  double speedY;
-  double driftX;
-  double life;
-
-  _SmokeParticle({
-    required this.x,
-    required this.y,
-    required this.size,
-    required this.opacity,
-    required this.speedY,
-    required this.driftX,
-    required this.life,
-  });
-}
-
-class _SmokePainter extends CustomPainter {
-  final List<_SmokeParticle> particles;
-
-  _SmokePainter(this.particles);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    for (final p in particles) {
-      final wobble = (now / 2000 + p.x * 20) % 1.0;
-      final sway = (wobble - 0.5) * 2 * 0.03;
-      final opacity = p.opacity * (1 - p.life);
-      final paint = Paint()
-        ..color = const Color(0xFFA89F94).withValues(alpha: opacity * 0.6)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-      canvas.drawCircle(
-        Offset(
-          (p.x + sway + p.driftX * p.life * 2) * size.width,
-          (p.y - p.life * 0.3) * size.height,
-        ),
-        p.size + p.life * size.width * 0.06,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SmokePainter oldDelegate) => true;
-}
-
 class _IncenseScreenState extends State<IncenseScreen>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
-  final O3DController _o3dController = O3DController();
-  late AnimationController _smokeController;
-  final List<_SmokeParticle> _particles = [];
-  final Random _random = Random();
+  // Drives the repaint of the incense/smoke effects while burning.
+  late final AnimationController _fx;
+  final Stopwatch _clock = Stopwatch()..start();
 
   @override
   void initState() {
     super.initState();
-    _smokeController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..addListener(_updateParticles);
+    _fx = AnimationController(vsync: this, duration: const Duration(seconds: 1));
   }
 
   @override
   void dispose() {
-    _smokeController.dispose();
+    _fx.dispose();
     super.dispose();
-  }
-
-  void _startSmoke(int stickCount) {
-    _particles.clear();
-    final count = switch (stickCount) { 3 => 20, 5 => 30, _ => 12 };
-    for (int i = 0; i < count; i++) {
-      _particles.add(_createParticle(_random.nextDouble(), stickCount));
-    }
-    _smokeController.repeat();
-  }
-
-  void _stopSmoke() {
-    _smokeController.stop();
-    _particles.clear();
-  }
-
-  _SmokeParticle _createParticle(double life, int stickCount) {
-    // Ember tips sit at about 28% of the view height with the camera above.
-    const baseY = 0.28;
-    final spread = switch (stickCount) { 3 => 0.1, 5 => 0.15, _ => 0.04 };
-    return _SmokeParticle(
-      x: 0.5 + (_random.nextDouble() - 0.5) * spread,
-      y: baseY + (_random.nextDouble() - 0.5) * 0.02,
-      size: 4 + _random.nextDouble() * 8,
-      opacity: 0.2 + _random.nextDouble() * 0.3,
-      speedY: 0.002 + _random.nextDouble() * 0.004,
-      driftX: (_random.nextDouble() - 0.5) * 0.003,
-      life: life,
-    );
-  }
-
-  void _updateParticles() {
-    final provider = context.read<IncenseProvider>();
-    for (int i = 0; i < _particles.length; i++) {
-      final p = _particles[i];
-      p.life += 0.008;
-      p.driftX += (_random.nextDouble() - 0.5) * 0.0005;
-      p.size += 0.12;
-      if (p.life >= 1.0) {
-        _particles[i] = _createParticle(0, provider.stickCount);
-      }
-    }
-    if (mounted) setState(() {});
   }
 
   @override
@@ -145,10 +47,10 @@ class _IncenseScreenState extends State<IncenseScreen>
     final burning = incenseProvider.isBurning;
     WidgetsBinding.instance.addPostFrameCallback((_) => prayers.syncBurning(burning));
 
-    if (incenseProvider.isBurning && !_smokeController.isAnimating) {
-      _startSmoke(incenseProvider.stickCount);
-    } else if (!incenseProvider.isBurning && _smokeController.isAnimating) {
-      _stopSmoke();
+    if (burning && !_fx.isAnimating) {
+      _fx.repeat();
+    } else if (!burning && _fx.isAnimating) {
+      _fx.stop();
     }
 
     return Scaffold(
@@ -165,40 +67,52 @@ class _IncenseScreenState extends State<IncenseScreen>
           Expanded(
             child: Stack(
               children: [
+                // Fixed camera: IncenseFx projects the sticks and smoke with the same camera.
                 Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () {
-                      if (!incenseProvider.isBurning) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Vui lòng chọn thời gian để thắp hương')),
-                        );
-                      }
-                    },
-                    child: O3D(
-                      key: ValueKey('incense-${incenseProvider.stickCount}'),
-                      id: 'incense-${incenseProvider.stickCount}',
-                      src: incenseProvider.modelSrc,
-                      controller: _o3dController,
-                      autoPlay: true,
-                      autoRotate: true,
-                      cameraControls: true,
-                      disableZoom: true,
-                      cameraOrbit: CameraOrbit(30, 80, 4),
-                      cameraTarget: CameraTarget(0, 0.75, 0),
-                      fieldOfView: '30deg',
-                      disableTap: true,
-                      backgroundColor: Colors.transparent,
-                      loading: Loading.eager,
-                      environmentImage: 'neutral',
+                  child: O3D(
+                    id: 'incense-censer',
+                    src: IncenseProvider.modelSrc,
+                    autoPlay: false,
+                    autoRotate: false,
+                    cameraControls: false,
+                    disableZoom: true,
+                    disablePan: true,
+                    cameraOrbit: CameraOrbit(IncenseFx.orbitTheta, IncenseFx.orbitPhi, IncenseFx.orbitRadius),
+                    cameraTarget: CameraTarget(IncenseFx.target[0], IncenseFx.target[1], IncenseFx.target[2]),
+                    fieldOfView: '${IncenseFx.fovDeg}deg',
+                    interactionPrompt: InteractionPrompt.none,
+                    disableTap: true,
+                    backgroundColor: Colors.transparent,
+                    loading: Loading.eager,
+                    environmentImage: 'neutral',
+                  ),
+                ),
+
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _fx,
+                      builder: (context, _) => CustomPaint(
+                        painter: IncenseFx(
+                          sticks: incenseProvider.stickCount,
+                          burning: burning,
+                          burntOut: incenseProvider.burntOut,
+                          burn: incenseProvider.burnProgress,
+                          t: _clock.elapsedMilliseconds / 1000,
+                        ),
+                      ),
                     ),
                   ),
                 ),
 
-                if (incenseProvider.isBurning)
-                  Positioned.fill(
+                if (incenseProvider.burntOut)
+                  const Positioned(
+                    top: 16,
+                    left: 0,
+                    right: 0,
                     child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _SmokePainter(_particles),
+                      child: Center(
+                        child: _InfoChip(icon: Icons.spa_outlined, text: 'Hương đã tàn — thắp nén mới để tiếp tục'),
                       ),
                     ),
                   ),
@@ -313,7 +227,6 @@ class _IncenseScreenState extends State<IncenseScreen>
                     selected: {incenseProvider.stickCount},
                     onSelectionChanged: (s) {
                       incenseProvider.setStickCount(s.first);
-                      _o3dController.cameraTarget(0, 0.75, 0);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -505,6 +418,31 @@ class _PrayingCard extends StatelessWidget {
             label: const Text('Chọn kinh để đọc', style: TextStyle(color: AppTheme.gold)),
             style: OutlinedButton.styleFrom(side: const BorderSide(color: AppTheme.antiqueGold), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22))),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _InfoChip({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.darkWood.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppTheme.antiqueGold),
+          const SizedBox(width: 8),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
         ],
       ),
     );

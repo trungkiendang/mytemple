@@ -1,6 +1,6 @@
 // Procedurally builds the 3D models used by the app (assets/models/*.glb):
 //   mo.glb          wooden fish (mõ) on a red cushion (the mallet is a 2D overlay in the app)
-//   incense_N.glb   bronze censer (lư hương) holding N incense sticks (1, 3, 5)
+//   incense_censer.glb   bronze censer (lư hương); sticks + smoke are drawn in Flutter
 // Usage: cd scripts && npm install && node generate_models.js
 const path = require('path');
 const { Document, NodeIO } = require('@gltf-transform/core');
@@ -470,17 +470,12 @@ async function buildMo() {
 }
 
 // ── Lư hương: bronze censer with N incense sticks ─────────────────
-const STICK_TOP = 1.25; // ember height reference, keep in sync with incense_screen.dart
 
-async function buildIncense(count) {
+async function buildIncense() {
   const b = new Builder();
   const bronze = b.material('bronze', { color: [0.55, 0.32, 0.1], metal: 0.55, rough: 0.5 });
   const gold = b.material('gold', { color: [0.95, 0.75, 0.3], metal: 0.9, rough: 0.3 });
   const ash = b.material('ash', { color: [0.32, 0.3, 0.28], rough: 1 });
-  const stick = b.material('stick', { color: [0.55, 0.14, 0.08], rough: 0.9 });
-  const ember = b.material('ember', {
-    color: [0.95, 0.25, 0.05], rough: 0.4, emissive: [2.5, 0.6, 0.1],
-  });
 
   // Body of the censer (profile bottom → top, closed at the top by the ash)
   b.add('censer', lathe([
@@ -505,28 +500,15 @@ async function buildIncense(count) {
     }), bronze);
   }
 
-  // Sticks fan out of the ash, tilted away from the centre
-  const base = 0.5;
-  const len = STICK_TOP - base;
-  // [base x, base z, lean direction x, lean direction z]; lean angle is 0.18 rad
-  const layouts = {
-    1: [[0, 0, 0, 0]],
-    3: [[-0.05, 0, -1, 0], [0.05, 0.03, 1, 0.5], [0.05, -0.03, 0.5, -1]],
-    5: [[0, 0, 0, 0], [-0.07, 0, -1, 0], [0.07, 0, 1, 0], [0, 0.07, 0, 1], [0, -0.07, 0, -1]],
-  }[count];
-  const lean = count === 1 ? 0 : 0.18;
-  layouts.forEach(([x, z, dx, dz], i) => {
-    const geo = (part) => xform(part, { t: [x, base, z], rz: -dx * lean, rx: dz * lean });
-    b.add(`stick${i}`, geo(cylinder(0.011, 0.011, 0, len, 10)), stick);
-    b.add(`ember${i}`, geo(cylinder(0.0125, 0.0125, len - 0.07, len + 0.005, 10)), ember);
-  });
+  // The incense sticks, their glowing tips, ash and smoke are drawn by the app (lib/features/incense/incense_effects.dart)
+  // so they can burn down and emit smoke from the right place.
 
-  await b.write(`incense_${count}.glb`);
+  await b.write('incense_censer.glb');
 }
 
 async function main() {
   await buildMo();
-  for (const n of [1, 3, 5]) await buildIncense(n);
+  await buildIncense();
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

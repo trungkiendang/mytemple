@@ -11,7 +11,7 @@
 - Đếm số người đang cùng tu tập (dựa trên `lastActive` trong 3 phút gần nhất).
 
 ### 2. Thắp Hương 3D
-- Lư hương đồng 3D với 1 / 3 / 5 nén hương, hiệu ứng khói bay lên.
+- Lư hương đồng 3D với 1 / 3 / 5 nén hương: đầu hương cháy đỏ có tia lửa, **nén ngắn dần và tàn đúng theo thời gian đã chọn**, khói mỗi loại một kiểu (1 nén cột thẳng, 3 nén bện xoắn, 5 nén xoáy cuộn).
 - Hẹn giờ thắp hương (1, 5, 15 phút) và đếm ngược.
 - Gửi gắm **lời nguyện** cùng nén hương (hiển thị trong lúc thắp).
 - **Đọc kinh / văn khấn kiểu karaoke**: chọn bài (Mùng Một, Rằm, cầu bình an, cầu may mắn – tài lộc, gia tiên, Thổ Công – Thần Tài, niệm Phật, hồi hướng), chọn **Chữ chạy** (từng từ sáng lên theo nhịp đọc) hoặc **Giọng đọc** (TTS tiếng Việt), tự động đọc khi thắp hương, chỉnh tốc độ, chạm vào câu để đọc lại từ đó. Nội dung ở `assets/data/prayers.json` (22 bài trong 5 cuốn: hằng tháng, Tết, cầu nguyện, gia đạo, lễ Phật) và có màn **Kho văn khấn** trong tab Kinh. Có thể chọn/đổi bài ngay khi đang thắp hương. Hỗ trợ phát **bản thu có bản quyền hợp lệ** (xem `docs/PRAYER_AUDIO.md`).
