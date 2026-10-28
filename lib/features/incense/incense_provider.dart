@@ -10,6 +10,15 @@ class IncenseProvider with ChangeNotifier {
   int _stickCount = 1;
   int _totalIncenseSeconds = 0;
   String _petition = '';
+  int _selectedMinutes = 5;
+  static const durations = [1, 5, 15, 30];
+
+  int get selectedMinutes => _selectedMinutes;
+
+  void setSelectedMinutes(int m) {
+    _selectedMinutes = m;
+    notifyListeners();
+  }
 
   /// Prayer attached to the incense (shown while burning).
   String get petition => _petition;

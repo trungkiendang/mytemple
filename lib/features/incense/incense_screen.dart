@@ -159,7 +159,7 @@ class _IncenseScreenState extends State<IncenseScreen>
       ),
       body: LayoutBuilder(builder: (context, box) {
         // Fixed bottom-panel height (same in both states) → the 3D view keeps its size.
-        final panelHeight = (box.maxHeight * 0.52).clamp(380.0, 470.0);
+        final panelHeight = (box.maxHeight * 0.40).clamp(290.0, 360.0);
         return Column(
         children: [
           Expanded(
@@ -295,26 +295,28 @@ class _IncenseScreenState extends State<IncenseScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (!incenseProvider.isBurning) ...[
-                  const Text(
-                    'Số que hương',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.darkWood,
+                  SegmentedButton<int>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      selectedBackgroundColor: AppTheme.woodBrown,
+                      selectedForegroundColor: Colors.white,
+                      foregroundColor: AppTheme.darkWood,
+                      side: BorderSide(color: AppTheme.woodBrown.withValues(alpha: 0.35)),
+                      minimumSize: const Size(0, 46),
+                      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                     ),
+                    segments: const [
+                      ButtonSegment(value: 1, label: Text('1 nén')),
+                      ButtonSegment(value: 3, label: Text('3 nén')),
+                      ButtonSegment(value: 5, label: Text('5 nén')),
+                    ],
+                    selected: {incenseProvider.stickCount},
+                    onSelectionChanged: (s) {
+                      incenseProvider.setStickCount(s.first);
+                      _o3dController.cameraTarget(0, 0.75, 0);
+                    },
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildStickBtn(context, 1, '1'),
-                      const SizedBox(width: 16),
-                      _buildStickBtn(context, 3, '3'),
-                      const SizedBox(width: 16),
-                      _buildStickBtn(context, 5, '5'),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Expanded(
@@ -352,23 +354,45 @@ class _IncenseScreenState extends State<IncenseScreen>
                       ),
                     ],
                   ),
-                  const Divider(height: 28),
-                  const Text(
-                    'Thời gian thắp hương',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.darkWood,
-                    ),
-                  ),
                   const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Thời gian thắp hương',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.darkWood.withValues(alpha: 0.6))),
+                  ),
+                  const SizedBox(height: 6),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildDurationBtn(context, 1, '1 Phút'),
-                      _buildDurationBtn(context, 5, '5 Phút'),
-                      _buildDurationBtn(context, 15, '15 Phút'),
+                      for (final m in IncenseProvider.durations)
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+                            child: ChoiceChip(
+                              showCheckmark: false,
+                              padding: EdgeInsets.zero,
+                              labelPadding: const EdgeInsets.symmetric(vertical: 6),
+                              label: SizedBox(width: double.infinity, child: Text('$m phút', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
+                              selected: incenseProvider.selectedMinutes == m,
+                              selectedColor: AppTheme.antiqueGold.withValues(alpha: 0.35),
+                              onSelected: (_) => incenseProvider.setSelectedMinutes(m),
+                            ),
+                          ),
+                        ),
                     ],
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => incenseProvider.startBurning(incenseProvider.selectedMinutes),
+                      icon: const AppIcon.incense(size: 22, color: AppTheme.gold),
+                      label: Text('Thắp hương · ${incenseProvider.selectedMinutes} phút',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 17),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                      ),
+                    ),
                   ),
                 ] else ...[
                   if (incenseProvider.petition.isNotEmpty && context.read<PrayerProvider>().selected != null) ...[
@@ -417,7 +441,7 @@ class _IncenseScreenState extends State<IncenseScreen>
   }
 
   static final ButtonStyle _pillStyle = OutlinedButton.styleFrom(
-    minimumSize: const Size(0, 44),
+    minimumSize: const Size(0, 48),
     padding: const EdgeInsets.symmetric(horizontal: 10),
     side: BorderSide(color: AppTheme.woodBrown.withValues(alpha: 0.3)),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
@@ -445,65 +469,8 @@ class _IncenseScreenState extends State<IncenseScreen>
     if (result != null) provider.setPetition(result);
     controller.dispose();
   }
-
-  Widget _buildStickBtn(BuildContext context, int count, String label) {
-    final provider = Provider.of<IncenseProvider>(context, listen: false);
-    final isSelected = provider.stickCount == count;
-    return GestureDetector(
-      onTap: () {
-        provider.setStickCount(count);
-        _o3dController.cameraTarget(0, 0.75, 0);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.woodBrown : Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(
-            color: isSelected ? AppTheme.darkWood : AppTheme.woodBrown.withValues(alpha: 0.3),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [BoxShadow(color: AppTheme.darkWood.withValues(alpha: 0.3), blurRadius: 8)]
-              : null,
-        ),
-        child: Text(
-          '$label Que',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            color: isSelected ? Colors.white : AppTheme.darkWood,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDurationBtn(BuildContext context, int min, String label) {
-    return InkWell(
-      onTap: () => Provider.of<IncenseProvider>(context, listen: false).startBurning(min),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: AppTheme.woodBrown.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.woodBrown.withValues(alpha: 0.2)),
-            ),
-            child: const Icon(Icons.timer_outlined, color: AppTheme.woodBrown),
-          ),
-          const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
-    );
-  }
 }
 
-
-/// Burning without a prayer: a calm card (lotus + "Đang nguyện cầu" + the petition, if any).
 class _PrayingCard extends StatelessWidget {
   final String petition;
   const _PrayingCard({required this.petition});
@@ -512,22 +479,31 @@ class _PrayingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppTheme.darkWood, Color(0xFF2A1A16)]),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const AppIcon.lotus(size: 46, color: AppTheme.antiqueGold),
-          const SizedBox(height: 12),
+          const AppIcon.lotus(size: 38, color: AppTheme.antiqueGold),
+          const SizedBox(height: 8),
           const Text('Đang nguyện cầu', style: TextStyle(color: AppTheme.gold, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(
             petition.isEmpty ? 'Tĩnh tâm, hít thở sâu và hướng lòng về điều thiện lành.' : '“$petition”',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 15, height: 1.45, fontStyle: petition.isEmpty ? FontStyle.normal : FontStyle.italic),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => showPrayerSheet(context),
+            icon: const Icon(Icons.menu_book_outlined, color: AppTheme.gold, size: 20),
+            label: const Text('Chọn kinh để đọc', style: TextStyle(color: AppTheme.gold)),
+            style: OutlinedButton.styleFrom(side: const BorderSide(color: AppTheme.antiqueGold), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22))),
           ),
         ],
       ),

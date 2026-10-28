@@ -139,7 +139,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2; // opens on the incense tab
 
   final List<Widget> _screens = [
     const MonkBellScreen(),

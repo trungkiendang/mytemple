@@ -5,6 +5,7 @@ import '../../services/hive_service.dart';
 import '../../core/app_icons.dart';
 import '../../services/analytics_service.dart';
 import '../../core/app_theme.dart';
+import 'prayer_library_screen.dart';
 import 'scripture_detail_screen.dart';
 
 class ScriptureListScreen extends StatefulWidget {
@@ -51,6 +52,38 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerLibraryScreen())),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [AppTheme.darkWood, AppTheme.woodBrown]),
+                  ),
+                  child: const Row(
+                    children: [
+                      AppIcon.incense(size: 30, color: AppTheme.gold),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Kho văn khấn', style: TextStyle(color: AppTheme.gold, fontSize: 17, fontWeight: FontWeight.bold)),
+                            SizedBox(height: 2),
+                            Text('Mùng Một, Rằm, Tết, cầu nguyện, gia đạo, lễ Phật…', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: Colors.white70),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(

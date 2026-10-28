@@ -28,10 +28,7 @@ class _PrayerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<PrayerProvider>();
-    final categories = <String>[];
-    for (final x in p.prayers) {
-      if (!categories.contains(x.category)) categories.add(x.category);
-    }
+    final hasRecording = p.selected?.audio != null;
     return Column(
       children: [
         const SizedBox(height: 10),
@@ -45,9 +42,10 @@ class _PrayerSheet extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: SegmentedButton<ReadMode>(
             showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: ReadMode.subtitle, icon: Icon(Icons.subtitles_outlined), label: Text('Chữ chạy')),
-              ButtonSegment(value: ReadMode.voice, icon: Icon(Icons.record_voice_over_outlined), label: Text('Giọng đọc')),
+            segments: [
+              const ButtonSegment(value: ReadMode.subtitle, icon: Icon(Icons.subtitles_outlined), label: Text('Chữ chạy')),
+              const ButtonSegment(value: ReadMode.voice, icon: Icon(Icons.record_voice_over_outlined), label: Text('Giọng đọc')),
+              if (hasRecording) const ButtonSegment(value: ReadMode.recording, icon: Icon(Icons.graphic_eq), label: Text('Bản thu')),
             ],
             selected: {p.mode},
             onSelectionChanged: (s) => p.setMode(s.first),
@@ -75,13 +73,13 @@ class _PrayerSheet extends StatelessWidget {
                   Navigator.pop(context);
                 },
               ),
-              for (final c in categories) ...[
+              for (final book in p.books) ...[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-                  child: Text(c.toUpperCase(),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 2),
+                  child: Text(book.title.toUpperCase(),
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, color: AppTheme.lightWood)),
                 ),
-                for (final x in p.prayers.where((x) => x.category == c))
+                for (final x in p.prayers.where((x) => x.book == book.id))
                   ListTile(
                     leading: const Icon(Icons.menu_book_outlined, color: AppTheme.woodBrown),
                     title: Text(x.title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.darkWood)),
@@ -164,9 +162,31 @@ class _PrayerReaderCardState extends State<PrayerReaderCard> {
                 ),
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  tooltip: p.mode == ReadMode.voice ? 'Đang đọc thành tiếng' : 'Chữ chạy',
-                  icon: Icon(p.mode == ReadMode.voice ? Icons.record_voice_over : Icons.subtitles_outlined, color: Colors.white70, size: 20),
-                  onPressed: () => p.setMode(p.mode == ReadMode.voice ? ReadMode.subtitle : ReadMode.voice),
+                  tooltip: switch (p.mode) {
+                    ReadMode.voice => 'Đang đọc thành tiếng',
+                    ReadMode.recording => 'Đang phát bản thu',
+                    ReadMode.subtitle => 'Chữ chạy',
+                  },
+                  icon: Icon(
+                    switch (p.mode) {
+                      ReadMode.voice => Icons.record_voice_over,
+                      ReadMode.recording => Icons.graphic_eq,
+                      ReadMode.subtitle => Icons.subtitles_outlined,
+                    },
+                    color: Colors.white70,
+                    size: 20,
+                  ),
+                  onPressed: () => p.setMode(switch (p.mode) {
+                    ReadMode.subtitle => ReadMode.voice,
+                    ReadMode.voice => prayer.audio != null ? ReadMode.recording : ReadMode.subtitle,
+                    ReadMode.recording => ReadMode.subtitle,
+                  }),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Đổi bài khấn / kinh',
+                  icon: const Icon(Icons.library_books_outlined, color: Colors.white70, size: 20),
+                  onPressed: () => showPrayerSheet(context),
                 ),
               ],
             ),

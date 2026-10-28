@@ -79,6 +79,7 @@ flutter:
   assets:
     - assets/models/
     - assets/audio/
+    - assets/audio/prayers/
     - assets/data/
     - assets/icon/splash_logo.png
 
