@@ -15,6 +15,7 @@ import 'features/incense/incense_provider.dart';
 import 'core/app_icons.dart';
 import 'services/firebase_status.dart';
 import 'features/incense/incense_screen.dart';
+import 'features/incense/prayer_provider.dart';
 import 'features/calendar/event_provider.dart';
 import 'features/calendar/lunar_calendar_screen.dart';
 import 'features/profile/profile_screen.dart';
@@ -68,6 +69,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => IncenseProvider()),
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => TtsService()),
+        ChangeNotifierProvider(create: (ctx) => PrayerProvider(ctx.read<TtsService>())),
         ChangeNotifierProvider(create: (_) => AppAuthProvider()),
       ],
       child: MaterialApp(

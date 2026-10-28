@@ -1,0 +1,272 @@
+[
+ {
+  "id": "khan-mung-mot",
+  "title": "Văn khấn Mùng Một",
+  "subtitle": "Đầu tháng âm lịch, tại gia",
+  "category": "Mùng Một & Rằm",
+  "loop": false,
+  "lines": [
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   },
+   {
+    "t": "Kính lạy Đức Phật A Di Đà, Đức Phật Thích Ca Mâu Ni, Đức Quán Thế Âm Bồ Tát, Đức Đại Thế Chí Bồ Tát và chư Phật, chư Bồ Tát mười phương."
+   },
+   {
+    "t": "Tín chủ con là (xưng họ tên), ngụ tại (xưng địa chỉ).",
+    "fill": true
+   },
+   {
+    "t": "Hôm nay là ngày mùng Một đầu tháng, con thành tâm sắm sửa hương hoa, trà quả, dâng lên trước Phật đài."
+   },
+   {
+    "t": "Kính xin chư Phật, chư Bồ Tát từ bi chứng giám lòng thành của con."
+   },
+   {
+    "t": "Nguyện cho con và gia đình thân tâm an lạc, sức khỏe dồi dào, gia đạo bình an."
+   },
+   {
+    "t": "Nguyện cho công việc hanh thông, làm ăn thuận lợi, mọi việc được như ý."
+   },
+   {
+    "t": "Nguyện cho con luôn giữ lòng thiện lành, tinh tấn tu tập, tránh điều ác, làm nhiều việc lành."
+   },
+   {
+    "t": "Con xin hồi hướng công đức này đến tất cả chúng sinh, cùng sớm thành Phật đạo."
+   },
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   }
+  ]
+ },
+ {
+  "id": "khan-ram",
+  "title": "Văn khấn Rằm",
+  "subtitle": "Ngày 15 âm lịch, tại gia",
+  "category": "Mùng Một & Rằm",
+  "loop": false,
+  "lines": [
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   },
+   {
+    "t": "Kính lạy Đức Phật A Di Đà, Đức Phật Thích Ca Mâu Ni, Đức Quán Thế Âm Bồ Tát, Đức Đại Thế Chí Bồ Tát và chư Phật, chư Bồ Tát mười phương."
+   },
+   {
+    "t": "Tín chủ con là (xưng họ tên), ngụ tại (xưng địa chỉ).",
+    "fill": true
+   },
+   {
+    "t": "Hôm nay là ngày Rằm trong tháng, con thành tâm sắm sửa hương hoa, trà quả, dâng lên trước Phật đài."
+   },
+   {
+    "t": "Kính xin chư Phật, chư Bồ Tát từ bi chứng giám lòng thành của con."
+   },
+   {
+    "t": "Nguyện cho gia đình con được bình an, mạnh khỏe, vạn sự cát tường."
+   },
+   {
+    "t": "Nguyện cho ông bà, cha mẹ, anh em, con cháu đều được an vui, hòa thuận."
+   },
+   {
+    "t": "Nguyện cho quốc thái dân an, thế giới hòa bình, muôn loài đều được an lạc."
+   },
+   {
+    "t": "Con xin hồi hướng công đức này đến tất cả chúng sinh, cùng sớm thành Phật đạo."
+   },
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   }
+  ]
+ },
+ {
+  "id": "khan-cau-binh-an",
+  "title": "Văn khấn cầu bình an",
+  "subtitle": "Cầu sức khỏe, tai qua nạn khỏi",
+  "category": "Cầu nguyện",
+  "loop": false,
+  "lines": [
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   },
+   {
+    "t": "Kính lạy Đức Phật A Di Đà, Đức Phật Thích Ca Mâu Ni, Đức Quán Thế Âm Bồ Tát, Đức Đại Thế Chí Bồ Tát và chư Phật, chư Bồ Tát mười phương."
+   },
+   {
+    "t": "Tín chủ con là (xưng họ tên), ngụ tại (xưng địa chỉ).",
+    "fill": true
+   },
+   {
+    "t": "Hôm nay con thành tâm dâng hương hoa, cúi xin chư Phật, chư Bồ Tát từ bi gia hộ."
+   },
+   {
+    "t": "Nguyện cho con và những người thân yêu thân tâm khỏe mạnh, tai qua nạn khỏi."
+   },
+   {
+    "t": "Nguyện cho những ai đang đau yếu bệnh tật sớm được lành bệnh, an vui."
+   },
+   {
+    "t": "Nguyện cho những người đi xa được bình an, mọi việc thuận lợi, sớm trở về đoàn tụ."
+   },
+   {
+    "t": "Nam mô Đại Từ Đại Bi Cứu Khổ Cứu Nạn Quán Thế Âm Bồ Tát! Nam mô Đại Từ Đại Bi Cứu Khổ Cứu Nạn Quán Thế Âm Bồ Tát! Nam mô Đại Từ Đại Bi Cứu Khổ Cứu Nạn Quán Thế Âm Bồ Tát!"
+   },
+   {
+    "t": "Con xin hồi hướng công đức này đến tất cả chúng sinh, cùng sớm thành Phật đạo."
+   },
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   }
+  ]
+ },
+ {
+  "id": "khan-cau-may",
+  "title": "Văn khấn cầu may mắn, tài lộc",
+  "subtitle": "Cầu công việc hanh thông, làm ăn thuận lợi",
+  "category": "Cầu nguyện",
+  "loop": false,
+  "lines": [
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   },
+   {
+    "t": "Kính lạy Đức Phật A Di Đà, Đức Phật Thích Ca Mâu Ni, Đức Quán Thế Âm Bồ Tát, Đức Đại Thế Chí Bồ Tát và chư Phật, chư Bồ Tát mười phương."
+   },
+   {
+    "t": "Tín chủ con là (xưng họ tên), ngụ tại (xưng địa chỉ).",
+    "fill": true
+   },
+   {
+    "t": "Hôm nay con thành tâm dâng hương hoa, trà quả, cúi xin chư Phật, chư Bồ Tát từ bi chứng giám."
+   },
+   {
+    "t": "Nguyện cho con có đủ trí tuệ và sức khỏe để làm tốt công việc của mình."
+   },
+   {
+    "t": "Nguyện cho con gặp nhiều may mắn, gặp được người tốt, có nhiều cơ hội chính đáng để phát triển."
+   },
+   {
+    "t": "Nguyện cho việc làm ăn, buôn bán được thuận lợi, tài lộc đến bằng con đường lương thiện."
+   },
+   {
+    "t": "Con xin hứa sống ngay thẳng, biết sẻ chia, giúp đỡ người khó khăn bằng khả năng của mình."
+   },
+   {
+    "t": "Con xin hồi hướng công đức này đến tất cả chúng sinh, cùng sớm thành Phật đạo."
+   },
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   }
+  ]
+ },
+ {
+  "id": "khan-gia-tien",
+  "title": "Văn khấn gia tiên",
+  "subtitle": "Tưởng nhớ tổ tiên ngày mùng Một, Rằm",
+  "category": "Tổ tiên & gia đạo",
+  "loop": false,
+  "lines": [
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   },
+   {
+    "t": "Kính lạy hương linh Cửu huyền Thất tổ, nội ngoại tông đường, các vị tiên linh trong gia tộc."
+   },
+   {
+    "t": "Tín chủ con là (xưng họ tên), ngụ tại (xưng địa chỉ).",
+    "fill": true
+   },
+   {
+    "t": "Hôm nay là ngày mùng Một (hoặc Rằm), con thành tâm sắm lễ, hương hoa, trà quả, dâng lên trước bàn thờ gia tiên."
+   },
+   {
+    "t": "Con kính mời các vị hương linh về thụ hưởng lễ vật, chứng giám lòng thành của con cháu."
+   },
+   {
+    "t": "Cúi xin gia tiên phù hộ độ trì cho con cháu bình an, khỏe mạnh, học hành tấn tới, làm ăn thuận lợi."
+   },
+   {
+    "t": "Con cháu xin nguyện sống hiếu thảo, hòa thuận, giữ gìn nề nếp gia phong."
+   },
+   {
+    "t": "Nam mô A Di Đà Phật! Nam mô A Di Đà Phật! Nam mô A Di Đà Phật!"
+   }
+  ]
+ },
+ {
+  "id": "khan-tho-cong",
+  "title": "Văn khấn Thổ Công - Thần Tài",
+  "subtitle": "Cúng mùng Một, Rằm tại gia",
+  "category": "Tổ tiên & gia đạo",
+  "loop": false,
+  "lines": [
+   {
+    "t": "Kính lạy các ngài Thổ Công, Thổ Địa, Thần Tài cai quản trong nhà."
+   },
+   {
+    "t": "Tín chủ con là (xưng họ tên), ngụ tại (xưng địa chỉ).",
+    "fill": true
+   },
+   {
+    "t": "Hôm nay là ngày mùng Một (hoặc Rằm), con thành tâm sắm lễ, hương hoa, trà quả, dâng lên trước án thờ."
+   },
+   {
+    "t": "Kính mời các ngài chứng giám, thụ hưởng lễ vật."
+   },
+   {
+    "t": "Cúi xin các ngài phù hộ cho gia đình con bình an, nhà cửa yên ấm, mọi việc hanh thông."
+   },
+   {
+    "t": "Cúi xin các ngài gia hộ cho việc làm ăn của gia đình được thuận lợi, tài lộc đầy đủ."
+   },
+   {
+    "t": "Con xin thành tâm cảm tạ."
+   }
+  ]
+ },
+ {
+  "id": "niem-phat",
+  "title": "Niệm Phật A Di Đà",
+  "subtitle": "Lặp lại để định tâm",
+  "category": "Niệm Phật",
+  "loop": true,
+  "lines": [
+   {
+    "t": "Nam mô A Di Đà Phật."
+   },
+   {
+    "t": "Nam mô A Di Đà Phật."
+   },
+   {
+    "t": "Nam mô A Di Đà Phật."
+   },
+   {
+    "t": "Nam mô Quán Thế Âm Bồ Tát."
+   },
+   {
+    "t": "Nam mô Đại Thế Chí Bồ Tát."
+   }
+  ]
+ },
+ {
+  "id": "hoi-huong",
+  "title": "Phát nguyện hồi hướng",
+  "subtitle": "Đọc cuối buổi lễ",
+  "category": "Niệm Phật",
+  "loop": false,
+  "lines": [
+   {
+    "t": "Nguyện đem công đức này,"
+   },
+   {
+    "t": "Hướng về khắp tất cả,"
+   },
+   {
+    "t": "Đệ tử và chúng sinh,"
+   },
+   {
+    "t": "Đều trọn thành Phật đạo."
+   }
+  ]
+ }
+]

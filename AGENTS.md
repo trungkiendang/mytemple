@@ -54,5 +54,6 @@ Node.js script at `scripts/upload_to_firebase.js`. Uses `firebase-admin`. Data s
 ## Notes (v1.2)
 - Mõ screen input is a Flutter overlay (Listener) above the 3D view; on web `#monk-bell { pointer-events: none }` in `web/index.html` lets events through. The 2D mallet is drawn by `_MalletPainter`.
 - `o3d` on web loads `src` only once per view id → the incense screen uses a distinct `key`/`id` per stick count.
+- Prayer reading (karaoke/TTS) during incense: `lib/features/incense/prayer_provider.dart` (state + timing), `prayer_widgets.dart` (sheet + reader card), data in `assets/data/prayers.json`; `TtsService.speakAndWait` awaits each line.
 - Custom nav/feature icons live in `lib/core/app_icons.dart` (`AppIcon.moBell/incense/scripture/lunar/lotus`).
 - Firebase findings and required console setup: `docs/FIREBASE.md`; store publishing: `docs/STORE_PUBLISHING.md`.

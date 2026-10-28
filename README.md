@@ -14,6 +14,7 @@
 - Lư hương đồng 3D với 1 / 3 / 5 nén hương, hiệu ứng khói bay lên.
 - Hẹn giờ thắp hương (1, 5, 15 phút) và đếm ngược.
 - Gửi gắm **lời nguyện** cùng nén hương (hiển thị trong lúc thắp).
+- **Đọc kinh / văn khấn kiểu karaoke**: chọn bài (Mùng Một, Rằm, cầu bình an, cầu may mắn – tài lộc, gia tiên, Thổ Công – Thần Tài, niệm Phật, hồi hướng), chọn **Chữ chạy** (từng từ sáng lên theo nhịp đọc) hoặc **Giọng đọc** (TTS tiếng Việt), tự động đọc khi thắp hương, chỉnh tốc độ, chạm vào câu để đọc lại từ đó. Nội dung ở `assets/data/prayers.json`; các bài khấn cũng xuất hiện trong thư viện Kinh (mục "Văn khấn").
 
 ### 3. Thư viện Kinh Văn & Phật Pháp
 - Chế độ **Hybrid**: Tải các bài kinh từ Firebase và lưu trữ cục bộ (Offline) qua Hive.

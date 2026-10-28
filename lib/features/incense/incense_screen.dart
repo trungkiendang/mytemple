@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:o3d/o3d.dart';
 import 'package:provider/provider.dart';
 import 'incense_provider.dart';
+import 'prayer_provider.dart';
+import 'prayer_widgets.dart';
 import '../monk_bell/monk_bell_provider.dart';
 import '../../core/app_theme.dart';
 
@@ -137,6 +139,10 @@ class _IncenseScreenState extends State<IncenseScreen>
     super.build(context);
     final incenseProvider = Provider.of<IncenseProvider>(context);
     final monkBellProvider = Provider.of<MonkBellProvider>(context);
+
+    final prayers = context.read<PrayerProvider>();
+    final burning = incenseProvider.isBurning;
+    WidgetsBinding.instance.addPostFrameCallback((_) => prayers.syncBurning(burning));
 
     if (incenseProvider.isBurning && !_smokeController.isAnimating) {
       _startSmoke(incenseProvider.stickCount);
@@ -304,22 +310,42 @@ class _IncenseScreenState extends State<IncenseScreen>
                     ],
                   ),
                   const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    onPressed: () => _editPetition(context, incenseProvider),
-                    icon: const Icon(Icons.edit_note, color: AppTheme.woodBrown),
-                    label: Text(
-                      incenseProvider.petition.isEmpty
-                          ? 'Gửi gắm lời nguyện (không bắt buộc)'
-                          : incenseProvider.petition,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppTheme.darkWood),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 44),
-                      side: BorderSide(color: AppTheme.woodBrown.withValues(alpha: 0.3)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _editPetition(context, incenseProvider),
+                          icon: const Icon(Icons.edit_note, color: AppTheme.woodBrown, size: 20),
+                          label: Text(
+                            incenseProvider.petition.isEmpty ? 'Lời nguyện' : incenseProvider.petition,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppTheme.darkWood, fontSize: 13),
+                          ),
+                          style: _pillStyle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Consumer<PrayerProvider>(
+                          builder: (context, prayer, _) => OutlinedButton.icon(
+                            onPressed: () => showPrayerSheet(context),
+                            icon: Icon(
+                              prayer.selected == null ? Icons.menu_book_outlined : Icons.menu_book,
+                              color: prayer.selected == null ? AppTheme.woodBrown : AppTheme.antiqueGold,
+                              size: 20,
+                            ),
+                            label: Text(
+                              prayer.selected?.title ?? 'Đọc kinh / khấn',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: AppTheme.darkWood, fontSize: 13),
+                            ),
+                            style: _pillStyle,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const Divider(height: 28),
                   const Text(
@@ -341,28 +367,24 @@ class _IncenseScreenState extends State<IncenseScreen>
                   ),
                 ] else ...[
                   if (incenseProvider.petition.isNotEmpty) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppTheme.parchment,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text('Lời nguyện',
-                              style: TextStyle(fontSize: 12, color: AppTheme.lightWood, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(
-                            incenseProvider.petition,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: AppTheme.darkWood),
-                          ),
-                        ],
-                      ),
+                    Text(
+                      '“${incenseProvider.petition}”',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: AppTheme.woodBrown),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                   ],
+                  Selector<PrayerProvider, bool>(
+                    selector: (_, p) => p.selected != null,
+                    builder: (_, hasPrayer, __) => hasPrayer
+                        ? const Padding(
+                            padding: EdgeInsets.only(bottom: 12),
+                            child: PrayerReaderCard(height: 276),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -387,6 +409,13 @@ class _IncenseScreenState extends State<IncenseScreen>
       ),
     );
   }
+
+  static final ButtonStyle _pillStyle = OutlinedButton.styleFrom(
+    minimumSize: const Size(0, 44),
+    padding: const EdgeInsets.symmetric(horizontal: 10),
+    side: BorderSide(color: AppTheme.woodBrown.withValues(alpha: 0.3)),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+  );
 
   Future<void> _editPetition(BuildContext context, IncenseProvider provider) async {
     final controller = TextEditingController(text: provider.petition);
