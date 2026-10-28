@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ class TtsService extends ChangeNotifier {
   final FlutterTts _flutterTts = FlutterTts();
   TtsState _ttsState = TtsState.stopped;
   double _rate = 0.5;
+  Completer<void>? _speaking;
 
   TtsState get ttsState => _ttsState;
   double get rate => _rate;
@@ -42,11 +44,13 @@ class TtsService extends ChangeNotifier {
 
     _flutterTts.setCompletionHandler(() {
       _ttsState = TtsState.stopped;
+      _finishSpeaking();
       notifyListeners();
     });
 
     _flutterTts.setCancelHandler(() {
       _ttsState = TtsState.stopped;
+      _finishSpeaking();
       notifyListeners();
     });
 
@@ -62,8 +66,26 @@ class TtsService extends ChangeNotifier {
 
     _flutterTts.setErrorHandler((msg) {
       _ttsState = TtsState.stopped;
+      _finishSpeaking();
       notifyListeners();
     });
+  }
+
+  void _finishSpeaking() {
+    final c = _speaking;
+    _speaking = null;
+    if (c != null && !c.isCompleted) c.complete();
+  }
+
+  /// Speaks [text] and completes when the utterance ends (or is cancelled / errors /
+  /// [timeout] passes — some platforms never report completion).
+  Future<void> speakAndWait(String text, {Duration timeout = const Duration(seconds: 30)}) async {
+    if (text.isEmpty) return;
+    _finishSpeaking();
+    final done = Completer<void>();
+    _speaking = done;
+    await _flutterTts.speak(text);
+    await done.future.timeout(timeout, onTimeout: () {});
   }
 
   Future<void> speak(String text) async {
@@ -78,6 +100,7 @@ class TtsService extends ChangeNotifier {
 
   Future<void> stop() async {
     await _flutterTts.stop();
+    _finishSpeaking();
   }
 
   Future<void> setRate(double rate) async {

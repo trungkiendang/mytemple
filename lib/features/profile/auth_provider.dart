@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import '../../services/analytics_service.dart';
+
 class AppAuthProvider with ChangeNotifier {
   User? _user;
   bool _isAnonymous = true;
@@ -41,6 +43,7 @@ class AppAuthProvider with ChangeNotifier {
         email: email,
         password: password,
       );
+      AnalyticsService.logEvent('login', {'method': 'email'});
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message ?? 'Đăng nhập thất bại';
@@ -54,6 +57,7 @@ class AppAuthProvider with ChangeNotifier {
         email: email,
         password: password,
       );
+      AnalyticsService.logEvent('sign_up', {'method': 'email'});
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message ?? 'Đăng ký thất bại';

@@ -8,6 +8,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 
+import '../../services/analytics_service.dart';
+import '../../services/firebase_status.dart';
+
 /// Tap counter for the wooden fish. Counts are persisted locally (Hive `settings`)
 /// and synced to Firestore in small batches when Firebase is reachable.
 class MonkBellProvider with ChangeNotifier {
@@ -46,7 +49,8 @@ class MonkBellProvider with ChangeNotifier {
   }
 
   /// True when Firestore is usable (Firebase initialised and a user is signed in).
-  bool get cloudReady => _firestore != null && FirebaseAuth.instance.currentUser != null;
+  bool get cloudReady =>
+      _firestore != null && FirebaseStatus.issue.value == null && FirebaseAuth.instance.currentUser != null;
 
   void _initFirebase() {
     if (Firebase.apps.isEmpty) return;
@@ -97,6 +101,9 @@ class MonkBellProvider with ChangeNotifier {
     _tapCount++;
     _pendingTaps++;
     Hive.box('settings').put(_tapKey, _tapCount);
+    if (const {10, 50, 108, 500, 1000, 5000}.contains(_tapCount)) {
+      AnalyticsService.logEvent('tap_milestone', {'count': _tapCount});
+    }
     _tapEvents.add(null);
     notifyListeners();
 
@@ -109,6 +116,7 @@ class MonkBellProvider with ChangeNotifier {
   void startAutoTap([int? perMinute]) {
     if (perMinute != null) _autoSpeed = perMinute;
     _autoTimer?.cancel();
+    if (!_isAutoTapping) AnalyticsService.logEvent('auto_tap_start', {'bpm': _autoSpeed});
     _isAutoTapping = true;
     _autoTimer = Timer.periodic(Duration(milliseconds: (60000 / _autoSpeed).round()), (_) => tap());
     notifyListeners();

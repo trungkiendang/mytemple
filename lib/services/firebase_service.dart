@@ -42,7 +42,7 @@ class FirebaseService {
 
   Future<List<Scripture>> _bundledScriptures() async {
     final raw = await rootBundle.loadString('assets/data/scriptures.json');
-    return (jsonDecode(raw) as List)
+    final scriptures = (jsonDecode(raw) as List)
         .map((e) => Scripture(
               id: e['id'] as String,
               title: e['title'] as String,
@@ -50,5 +50,6 @@ class FirebaseService {
               sect: e['sect'] as String?,
             ))
         .toList();
+    return scriptures;
   }
 }

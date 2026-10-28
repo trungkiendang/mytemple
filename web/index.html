@@ -24,9 +24,42 @@
   <style>
     /* Gõ mõ: let pointer events reach the Flutter layer above the 3D view */
     #monk-bell { pointer-events: none; }
+
+    /* Start-up splash (shown until Flutter paints its first frame; mirrors SplashScreen) */
+    body { margin: 0; }
+    #boot {
+      position: fixed; inset: 0; z-index: 99999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 42%, #5c3022 0%, #1e100b 100%);
+      transition: opacity .45s ease;
+    }
+    #boot img { width: 190px; height: 190px; animation: boot-pop 1.2s ease-out both; }
+    #boot h1 { margin: 22px 0 6px; color: #ffd700; font: 700 34px/1.1 Roboto, 'Segoe UI', sans-serif; letter-spacing: 1.2px; }
+    #boot p { margin: 0; color: rgba(255,255,255,.7); font: 400 14px Roboto, 'Segoe UI', sans-serif; letter-spacing: .6px; }
+    #boot .spin {
+      margin-top: 56px; width: 26px; height: 26px; border-radius: 50%;
+      border: 2.4px solid rgba(201,162,39,.25); border-top-color: #c9a227;
+      animation: boot-spin .9s linear infinite;
+    }
+    @keyframes boot-spin { to { transform: rotate(360deg); } }
+    @keyframes boot-pop { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
   </style>
 </head>
 <body>
+  <div id="boot">
+    <img src="icons/splash.png" alt="My Chùa">
+    <h1>My Chùa</h1>
+    <p>Tĩnh tâm · Thắp hương · Gõ mõ</p>
+    <div class="spin"></div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var boot = document.getElementById('boot');
+      if (!boot) return;
+      boot.style.opacity = '0';
+      setTimeout(function () { boot.remove(); }, 500);
+    });
+  </script>
   <script src="flutter_bootstrap.js" defer></script>
 </body>
 </html>

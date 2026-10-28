@@ -72,8 +72,14 @@ class _MonkBellScreenState extends State<MonkBellScreen>
       c.dispose();
     });
     // little bounce of the 3D model
-    _controller.cameraTarget(0, 0.06, 0);
-    Future.delayed(const Duration(milliseconds: 70), () => _controller.cameraTarget(0, 0, 0));
+    try {
+      _controller.cameraTarget(0, 0.06, 0);
+      Future.delayed(const Duration(milliseconds: 70), () {
+        try {
+          _controller.cameraTarget(0, 0, 0);
+        } catch (_) {}
+      });
+    } catch (_) {} // the web view may not expose the controller
   }
 
   void _onPointerMove(Offset p) => setState(() => _pointer = p);
@@ -90,6 +96,7 @@ class _MonkBellScreenState extends State<MonkBellScreen>
       appBar: AppBar(
         title: const Text('Gõ Mõ'),
         actions: [
+          if (context.watch<MonkBellProvider>().cloudReady)
           IconButton(
             tooltip: 'Bảng xếp hạng',
             icon: const Icon(Icons.emoji_events_outlined),
@@ -213,15 +220,17 @@ class _StatsHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _badge('Toàn cầu: ${p.globalTapCount}', Icons.public, AppTheme.antiqueGold),
-            const SizedBox(width: 8),
-            _badge('${p.onlineUsersCount} đang tu tập', Icons.circle, Colors.green, iconSize: 9),
-          ],
-        ),
+        if (p.cloudReady) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _badge('Toàn cầu: ${p.globalTapCount}', Icons.public, AppTheme.antiqueGold),
+              const SizedBox(width: 8),
+              _badge('${p.onlineUsersCount} đang tu tập', Icons.circle, Colors.green, iconSize: 9),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -305,57 +314,115 @@ class _ControlPanel extends StatelessWidget {
   }
 }
 
-/// The mallet (dùi): the ball sits on the strike point, the handle leans up-right and
-/// swings down on a strike.
+/// The mallet (dùi) as held by the user's hand: the grip is at the bottom-right (towards the
+/// user), the ball is at the strike point, and the stick pivots around the hand so the ball
+/// swings down onto the mõ on a strike.
 class _MalletPainter extends CustomPainter {
-  final Offset head;
-  final double strike; // 0..1
+  final Offset head; // strike point (ball centre at the moment of impact)
+  final double strike; // 0 = raised, 1 = impact
   _MalletPainter({required this.head, required this.strike});
+
+  static const _handleLen = 230.0;
+  static const _gripAngle = 1.2; // radians, from the ball towards the hand (down-right)
+  static const _raise = 0.42; // radians the stick is lifted when not striking
 
   @override
   void paint(Canvas canvas, Size size) {
-    const handleLen = 170.0;
-    final angle = -1.05 + strike * 0.35; // radians from +x; leaning up-right, swings down
-    final dir = Offset(math.cos(angle), math.sin(angle));
-    final ballCenter = head + Offset(0, strike * 6) - dir * 0; // ball touches the strike point
-    final end = ballCenter + dir * handleLen;
+    final toHand = Offset(math.cos(_gripAngle), math.sin(_gripAngle));
+    final grip = head + toHand * _handleLen; // the hand stays put
+    // rotate the stick about the grip: raised at rest, flat on the strike point at impact
+    final v = head - grip;
+    final rot = _raise * (1 - strike);
+    final c = math.cos(rot), sn = math.sin(rot);
+    final ball = grip + Offset(v.dx * c - v.dy * sn, v.dx * sn + v.dy * c);
+    final dir = (grip - ball) / (grip - ball).distance; // ball → hand
 
-    // soft shadow under the ball
+    // soft shadow on the "surface", stronger as the ball comes down
     canvas.drawOval(
-      Rect.fromCenter(center: head + const Offset(0, 20), width: 54, height: 12),
+      Rect.fromCenter(center: head + const Offset(0, 26), width: 56 + strike * 10, height: 12),
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.12 + strike * 0.1)
+        ..color = Colors.black.withValues(alpha: 0.08 + strike * 0.14)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
 
-    // handle
-    final handle = Paint()
-      ..shader = const LinearGradient(colors: [Color(0xFF7B3F1E), Color(0xFF4A2410)])
-          .createShader(Rect.fromPoints(ballCenter, end))
-      ..strokeWidth = 11
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(ballCenter + dir * 10, end, handle);
+    // tapered handle (thin near the ball, thicker at the grip)
+    final n = Offset(-dir.dy, dir.dx);
+    const wBall = 5.0, wGrip = 8.5;
+    final from = ball + dir * 14;
+    final handle = Path()
+      ..moveTo(from.dx + n.dx * wBall, from.dy + n.dy * wBall)
+      ..lineTo(grip.dx + n.dx * wGrip, grip.dy + n.dy * wGrip)
+      ..lineTo(grip.dx - n.dx * wGrip, grip.dy - n.dy * wGrip)
+      ..lineTo(from.dx - n.dx * wBall, from.dy - n.dy * wBall)
+      ..close();
+    canvas.drawPath(
+      handle,
+      Paint()
+        ..shader = const LinearGradient(colors: [Color(0xFF8A4A24), Color(0xFF4A2410)])
+            .createShader(Rect.fromPoints(ball, grip)),
+    );
+    // gold band
+    final bandA = ball + dir * (_handleLen * 0.55), bandB = ball + dir * (_handleLen * 0.6);
     canvas.drawLine(
-      end - dir * 40,
-      end - dir * 34,
+      bandA,
+      bandB,
       Paint()
         ..color = AppTheme.antiqueGold
-        ..strokeWidth = 12
+        ..strokeWidth = 14
         ..strokeCap = StrokeCap.butt,
     );
 
     // ball head (cream ivory with a highlight)
-    final r = 25.0 - strike * 1.5;
+    const r = 25.0;
     canvas.drawCircle(
-      ballCenter,
+      ball + const Offset(2, 3),
+      r,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.18)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawCircle(
+      ball,
       r,
       Paint()
         ..shader = RadialGradient(
           center: const Alignment(-0.4, -0.4),
           colors: const [Colors.white, Color(0xFFEBDDB8), Color(0xFFC9B07A)],
           stops: const [0.0, 0.6, 1.0],
-        ).createShader(Rect.fromCircle(center: ballCenter, radius: r)),
+        ).createShader(Rect.fromCircle(center: ball, radius: r)),
     );
+
+    // the hand: a fist wrapped around the end of the handle
+    canvas.save();
+    canvas.translate(grip.dx, grip.dy);
+    canvas.rotate(math.atan2(dir.dy, dir.dx) - math.pi / 2);
+    final fist = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(-24, -22, 48, 78),
+      const Radius.circular(22),
+    );
+    canvas.drawRRect(
+      fist.shift(const Offset(3, 4)),
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.18)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawRRect(
+      fist,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF0C7A4), Color(0xFFC98B66)],
+        ).createShader(fist.outerRect),
+    );
+    final line = Paint()
+      ..color = const Color(0xFF9A6446).withValues(alpha: 0.7)
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    for (final y in const [-8.0, 4.0, 16.0]) {
+      canvas.drawLine(Offset(-17, y), Offset(17, y), line); // fingers wrapped over the handle
+    }
+    canvas.restore();
   }
 
   @override

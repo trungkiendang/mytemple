@@ -1,6 +1,6 @@
 // Procedurally builds the 3D models used by the app (assets/models/*.glb):
 //   mo.glb          wooden fish (mõ) on a red cushion (the mallet is a 2D overlay in the app)
-//   incense_N.glb   bronze censer (lư hương) holding N incense sticks (1, 3, 5)
+//   incense_censer.glb   bronze censer (lư hương); sticks + smoke are drawn in Flutter
 // Usage: cd scripts && npm install && node generate_models.js
 const path = require('path');
 const { Document, NodeIO } = require('@gltf-transform/core');
@@ -469,25 +469,52 @@ async function buildMo() {
   await b.write('mo.glb');
 }
 
-// ── Lư hương: bronze censer with N incense sticks ─────────────────
-const STICK_TOP = 1.25; // ember height reference, keep in sync with incense_screen.dart
+// ── Ornament helpers (censer) ─────────────────────────────────────
+function boxPart(w, h, d) {
+  const p = newPart();
+  const [x, y, z] = [w / 2, h / 2, d / 2];
+  const faces = [
+    [[0, 0, 1], [[-x, -y, z], [x, -y, z], [x, y, z], [-x, y, z]]],
+    [[0, 0, -1], [[x, -y, -z], [-x, -y, -z], [-x, y, -z], [x, y, -z]]],
+    [[1, 0, 0], [[x, -y, z], [x, -y, -z], [x, y, -z], [x, y, z]]],
+    [[-1, 0, 0], [[-x, -y, -z], [-x, -y, z], [-x, y, z], [-x, y, -z]]],
+    [[0, 1, 0], [[-x, y, z], [x, y, z], [x, y, -z], [-x, y, -z]]],
+    [[0, -1, 0], [[-x, -y, -z], [x, -y, -z], [x, -y, z], [-x, -y, z]]],
+  ];
+  for (const [n, vs] of faces) {
+    const base = p.pos.length / 3;
+    vs.forEach((v, i) => { p.pos.push(...v); p.nor.push(...n); p.uv.push(i % 2, i >> 1); });
+    p.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+  return p;
+}
 
-async function buildIncense(count) {
+function mergeParts(parts) {
+  const out = newPart();
+  for (const q of parts) {
+    const off = out.pos.length / 3;
+    out.pos.push(...q.pos); out.nor.push(...q.nor); out.uv.push(...q.uv);
+    for (const i of q.idx) out.idx.push(i + off);
+  }
+  return out;
+}
+
+// ── Lư hương: bronze censer with N incense sticks ─────────────────
+
+async function buildIncense() {
   const b = new Builder();
   const bronze = b.material('bronze', { color: [0.55, 0.32, 0.1], metal: 0.55, rough: 0.5 });
+  bronze.setDoubleSided(true); // the inside wall is visible over the rim
   const gold = b.material('gold', { color: [0.95, 0.75, 0.3], metal: 0.9, rough: 0.3 });
-  const ash = b.material('ash', { color: [0.32, 0.3, 0.28], rough: 1 });
-  const stick = b.material('stick', { color: [0.55, 0.14, 0.08], rough: 0.9 });
-  const ember = b.material('ember', {
-    color: [0.95, 0.25, 0.05], rough: 0.4, emissive: [2.5, 0.6, 0.1],
-  });
+  const ash = b.material('ash', { color: [0.6, 0.56, 0.51], rough: 1 });
+  ash.setDoubleSided(true);
 
   // Body of the censer (profile bottom → top, closed at the top by the ash)
   b.add('censer', lathe([
     [0, 0.1], [0.2, 0.1], [0.28, 0.14], [0.36, 0.22], [0.4, 0.32], [0.38, 0.42],
     [0.36, 0.48], [0.41, 0.52], [0.43, 0.56], [0.4, 0.58], [0.34, 0.55],
   ], 56), bronze);
-  b.add('ash', lathe([[0, 0.53], [0.34, 0.55], [0.36, 0.55]], 56), ash);
+  b.add('ash', lathe([[0, 0.572], [0.12, 0.569], [0.25, 0.562], [0.34, 0.553], [0.36, 0.55]], 56), ash);
   b.add('band', xform(torus(0.39, 0.012, 56, 8), { t: [0, 0.3, 0] }), gold);
   b.add('lip', xform(torus(0.42, 0.014, 56, 8), { t: [0, 0.575, 0] }), gold);
 
@@ -505,28 +532,89 @@ async function buildIncense(count) {
     }), bronze);
   }
 
-  // Sticks fan out of the ash, tilted away from the centre
-  const base = 0.5;
-  const len = STICK_TOP - base;
-  // [base x, base z, lean direction x, lean direction z]; lean angle is 0.18 rad
-  const layouts = {
-    1: [[0, 0, 0, 0]],
-    3: [[-0.05, 0, -1, 0], [0.05, 0.03, 1, 0.5], [0.05, -0.03, 0.5, -1]],
-    5: [[0, 0, 0, 0], [-0.07, 0, -1, 0], [0.07, 0, 1, 0], [0, 0.07, 0, 1], [0, -0.07, 0, -1]],
-  }[count];
-  const lean = count === 1 ? 0 : 0.18;
-  layouts.forEach(([x, z, dx, dz], i) => {
-    const geo = (part) => xform(part, { t: [x, base, z], rz: -dx * lean, rx: dz * lean });
-    b.add(`stick${i}`, geo(cylinder(0.011, 0.011, 0, len, 10)), stick);
-    b.add(`ember${i}`, geo(cylinder(0.0125, 0.0125, len - 0.07, len + 0.005, 10)), ember);
+  // ── Antique ornaments ────────────────────────────────────────────
+  // outer wall profile (r, y) used to sit every ornament flush on the body
+  const wall = [[0.28, 0.14], [0.36, 0.22], [0.4, 0.32], [0.38, 0.42], [0.36, 0.48], [0.41, 0.52], [0.43, 0.56]];
+  const radiusAt = (y) => {
+    for (let i = 0; i < wall.length - 1; i++) {
+      const [r0, y0] = wall[i], [r1, y1] = wall[i + 1];
+      if (y >= y0 && y <= y1) return r0 + (r1 - r0) * ((y - y0) / (y1 - y0));
+    }
+    return wall[wall.length - 1][0];
+  };
+  const slopeAt = (y) => (radiusAt(y + 0.004) - radiusAt(y - 0.004)) / 0.008; // dr/dy
+  const patina = b.material('patina', { color: [0.2, 0.11, 0.04], metal: 0.4, rough: 0.7 });
+  const goldParts = [], patinaParts = [];
+  // put a part on the wall at azimuth a, height y, lifted by `lift`; local +z = outward, +y = up the wall
+  const onWall = (part, a, y, lift = 0, extra = {}) => {
+    const R = radiusAt(y) + lift;
+    return xform(part, {
+      t: [Math.cos(a) * R, y, Math.sin(a) * R],
+      rx: Math.atan(slopeAt(y)),
+      ry: Math.PI / 2 - a,
+      ...extra,
+    });
+  };
+  const ring = (n, fn) => { for (let i = 0; i < n; i++) fn((i / n) * Math.PI * 2, i); };
+
+  // lotus petals around the lower belly (two staggered rows)
+  ring(18, (a) => goldParts.push(onWall(ellipsoid(0.04, 0.062, 0.012, 12, 8), a, 0.2, 0.004)));
+  ring(18, (a) => goldParts.push(onWall(ellipsoid(0.034, 0.05, 0.011, 12, 8), a + Math.PI / 18, 0.255, 0.004)));
+
+  // round "thọ" medallions on the widest part of the belly
+  ring(6, (a) => {
+    goldParts.push(onWall(xform(cylinder(0.05, 0.05, 0, 0.012, 24), { rx: Math.PI / 2 }), a, 0.345, -0.004));
+    patinaParts.push(onWall(xform(torus(0.034, 0.004, 24, 6), { rx: Math.PI / 2 }), a, 0.345, 0.012));
+    patinaParts.push(onWall(xform(torus(0.018, 0.0035, 20, 6), { rx: Math.PI / 2 }), a, 0.345, 0.012));
+    goldParts.push(onWall(ellipsoid(0.011, 0.011, 0.008, 8, 6), a, 0.345, 0.012));
   });
 
-  await b.write(`incense_${count}.glb`);
+  // beaded rows: above the medallions, on the neck and along the lip
+  const beads = (n, y, lift, r = 0.0105) => ring(n, (a) => goldParts.push(onWall(ellipsoid(r, r, r, 8, 6), a, y, lift)));
+  beads(48, 0.388, 0.004);
+  beads(44, 0.485, 0.004, 0.009);
+  beads(60, 0.538, 0.006, 0.0095);
+
+  // key-fret (hồi văn) band around the neck, in dark patina so it reads as engraved
+  ring(24, (a) => {
+    const cell = (w, h, x, y) => patinaParts.push(onWall(boxPart(w, h, 0.007), a + x / 0.38, 0.43 + y, 0.0035));
+    cell(0.088, 0.011, 0, -0.024); // bottom bar
+    cell(0.011, 0.05, -0.039, 0); // left stem
+    cell(0.058, 0.011, -0.012, 0.024); // top bar
+    cell(0.011, 0.028, 0.017, 0.012); // inner stem
+    cell(0.03, 0.011, 0.002, 0.0); // inner bar
+  });
+
+  // extra gold lines on the neck and shoulder
+  b.add('band2', xform(torus(0.377, 0.007, 56, 8), { t: [0, 0.458, 0] }), gold);
+  b.add('band3', xform(torus(0.37, 0.007, 56, 8), { t: [0, 0.505, 0] }), gold);
+  b.add('band4', xform(torus(0.322, 0.007, 56, 8), { t: [0, 0.175, 0] }), gold);
+
+  // ears: ring + knob + attachment plates
+  for (const sx of [-1, 1]) {
+    goldParts.push(xform(ellipsoid(0.02, 0.02, 0.02, 10, 8), { t: [sx * 0.47, 0.42 + 0.105, 0] }));
+    goldParts.push(xform(torus(0.095, 0.004, 24, 6), { t: [sx * 0.47, 0.42, 0], rx: Math.PI / 2 }));
+    for (const dy of [-0.045, 0.045]) {
+      goldParts.push(xform(xform(cylinder(0.026, 0.026, 0, 0.012, 16), { rz: -sx * Math.PI / 2 }), { t: [sx * (radiusAt(0.42 + dy) - 0.002), 0.42 + dy, 0] }));
+    }
+  }
+  // collars on the feet and a thin ring under the belly
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + Math.PI / 6;
+    goldParts.push(xform(torus(0.05, 0.0085, 20, 6), { t: [Math.cos(a) * 0.23, 0.115, Math.sin(a) * 0.23] }));
+  }
+  b.add('orn_gold', mergeParts(goldParts), gold);
+  b.add('orn_patina', mergeParts(patinaParts), patina);
+
+  // The incense sticks, their glowing tips, ash and smoke are drawn by the app (lib/features/incense/incense_effects.dart)
+  // so they can burn down and emit smoke from the right place.
+
+  await b.write('incense_censer.glb');
 }
 
 async function main() {
   await buildMo();
-  for (const n of [1, 3, 5]) await buildIncense(n);
+  await buildIncense();
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

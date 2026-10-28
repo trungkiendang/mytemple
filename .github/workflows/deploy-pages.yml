@@ -28,7 +28,11 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build web --release --base-href /
+      - name: Build web
+        run: >
+          flutter build web --release --base-href /
+          --dart-define=GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
+          --dart-define=FIREBASE_WEB_APP_ID=${{ vars.FIREBASE_WEB_APP_ID || '1:609068144093:web:dummy' }}
 
       - run: echo 'chant.iamkien.tech' > build/web/CNAME
 
