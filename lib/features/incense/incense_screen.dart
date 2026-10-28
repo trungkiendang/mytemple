@@ -159,7 +159,7 @@ class _IncenseScreenState extends State<IncenseScreen>
       ),
       body: LayoutBuilder(builder: (context, box) {
         // Fixed bottom-panel height (same in both states) → the 3D view keeps its size.
-        final panelHeight = (box.maxHeight * 0.40).clamp(290.0, 360.0);
+        final panelHeight = (box.maxHeight * 0.40).clamp(318.0, 380.0);
         return Column(
         children: [
           Expanded(
