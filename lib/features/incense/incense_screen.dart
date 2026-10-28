@@ -7,6 +7,7 @@ import 'incense_provider.dart';
 import 'prayer_provider.dart';
 import 'prayer_widgets.dart';
 import '../monk_bell/monk_bell_provider.dart';
+import '../../core/app_icons.dart';
 import '../../core/app_theme.dart';
 
 class IncenseScreen extends StatefulWidget {
@@ -156,7 +157,10 @@ class _IncenseScreenState extends State<IncenseScreen>
         title: const Text('Thắp Hương'),
         centerTitle: true,
       ),
-      body: Column(
+      body: LayoutBuilder(builder: (context, box) {
+        // Fixed bottom-panel height (same in both states) → the 3D view keeps its size.
+        final panelHeight = (box.maxHeight * 0.52).clamp(380.0, 470.0);
+        return Column(
         children: [
           Expanded(
             child: Stack(
@@ -273,8 +277,8 @@ class _IncenseScreenState extends State<IncenseScreen>
             ),
           ),
           Container(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-            constraints: const BoxConstraints(minHeight: 400),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            height: panelHeight,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
@@ -287,7 +291,8 @@ class _IncenseScreenState extends State<IncenseScreen>
               ],
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (!incenseProvider.isBurning) ...[
                   const Text(
@@ -366,7 +371,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                     ],
                   ),
                 ] else ...[
-                  if (incenseProvider.petition.isNotEmpty) ...[
+                  if (incenseProvider.petition.isNotEmpty && context.read<PrayerProvider>().selected != null) ...[
                     Text(
                       '“${incenseProvider.petition}”',
                       textAlign: TextAlign.center,
@@ -376,14 +381,14 @@ class _IncenseScreenState extends State<IncenseScreen>
                     ),
                     const SizedBox(height: 10),
                   ],
-                  Selector<PrayerProvider, bool>(
-                    selector: (_, p) => p.selected != null,
-                    builder: (_, hasPrayer, __) => hasPrayer
-                        ? const Padding(
-                            padding: EdgeInsets.only(bottom: 12),
-                            child: PrayerReaderCard(height: 276),
-                          )
-                        : const SizedBox.shrink(),
+                  Expanded(
+                    child: Selector<PrayerProvider, bool>(
+                      selector: (_, p) => p.selected != null,
+                      builder: (_, hasPrayer, __) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: hasPrayer ? const PrayerReaderCard() : _PrayingCard(petition: incenseProvider.petition),
+                      ),
+                    ),
                   ),
                   SizedBox(
                     width: double.infinity,
@@ -406,7 +411,8 @@ class _IncenseScreenState extends State<IncenseScreen>
             ),
           ),
         ],
-      ),
+      );
+      }),
     );
   }
 
@@ -490,6 +496,39 @@ class _IncenseScreenState extends State<IncenseScreen>
           ),
           const SizedBox(height: 8),
           Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// Burning without a prayer: a calm card (lotus + "Đang nguyện cầu" + the petition, if any).
+class _PrayingCard extends StatelessWidget {
+  final String petition;
+  const _PrayingCard({required this.petition});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppTheme.darkWood, Color(0xFF2A1A16)]),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const AppIcon.lotus(size: 46, color: AppTheme.antiqueGold),
+          const SizedBox(height: 12),
+          const Text('Đang nguyện cầu', style: TextStyle(color: AppTheme.gold, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(
+            petition.isEmpty ? 'Tĩnh tâm, hít thở sâu và hướng lòng về điều thiện lành.' : '“$petition”',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 15, height: 1.45, fontStyle: petition.isEmpty ? FontStyle.normal : FontStyle.italic),
+          ),
         ],
       ),
     );

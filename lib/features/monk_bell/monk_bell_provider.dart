@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 
+import '../../services/analytics_service.dart';
 import '../../services/firebase_status.dart';
 
 /// Tap counter for the wooden fish. Counts are persisted locally (Hive `settings`)
@@ -100,6 +101,9 @@ class MonkBellProvider with ChangeNotifier {
     _tapCount++;
     _pendingTaps++;
     Hive.box('settings').put(_tapKey, _tapCount);
+    if (const {10, 50, 108, 500, 1000, 5000}.contains(_tapCount)) {
+      AnalyticsService.logEvent('tap_milestone', {'count': _tapCount});
+    }
     _tapEvents.add(null);
     notifyListeners();
 
@@ -112,6 +116,7 @@ class MonkBellProvider with ChangeNotifier {
   void startAutoTap([int? perMinute]) {
     if (perMinute != null) _autoSpeed = perMinute;
     _autoTimer?.cancel();
+    if (!_isAutoTapping) AnalyticsService.logEvent('auto_tap_start', {'bpm': _autoSpeed});
     _isAutoTapping = true;
     _autoTimer = Timer.periodic(Duration(milliseconds: (60000 / _autoSpeed).round()), (_) => tap());
     notifyListeners();

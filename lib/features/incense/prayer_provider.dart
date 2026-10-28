@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 
+import '../../services/analytics_service.dart';
 import '../../services/tts_service.dart';
 
 class PrayerLine {
@@ -99,6 +100,7 @@ class PrayerProvider extends ChangeNotifier {
     stop();
     selected = prayer;
     _settings.put('prayer_id', prayer?.id);
+    if (prayer != null) AnalyticsService.logEvent('prayer_select', {'prayer_id': prayer.id, 'mode': mode.name});
     notifyListeners();
   }
 

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../../services/analytics_service.dart';
+
 class IncenseProvider with ChangeNotifier {
   bool _isBurning = false;
   int _remainingSeconds = 0;
@@ -47,6 +49,11 @@ class IncenseProvider with ChangeNotifier {
   void startBurning(int durationMinutes) {
     if (_isBurning) return;
 
+    AnalyticsService.logEvent('incense_start', {
+      'sticks': _stickCount,
+      'minutes': durationMinutes,
+      'has_petition': _petition.isNotEmpty ? 1 : 0,
+    });
     _isBurning = true;
     _remainingSeconds = durationMinutes * 60;
     notifyListeners();

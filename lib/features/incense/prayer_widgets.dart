@@ -110,8 +110,9 @@ class _PrayerSheet extends StatelessWidget {
 
 /// Dark "karaoke" card: lines scroll to the current one, words light up as they are read.
 class PrayerReaderCard extends StatefulWidget {
-  final double height;
-  const PrayerReaderCard({super.key, this.height = 230});
+  /// null = fill the available space.
+  final double? height;
+  const PrayerReaderCard({super.key, this.height});
 
   @override
   State<PrayerReaderCard> createState() => _PrayerReaderCardState();

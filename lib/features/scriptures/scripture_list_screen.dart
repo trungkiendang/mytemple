@@ -3,6 +3,7 @@ import '../../models/scripture.dart';
 import '../../services/firebase_service.dart';
 import '../../services/hive_service.dart';
 import '../../core/app_icons.dart';
+import '../../services/analytics_service.dart';
 import '../../core/app_theme.dart';
 import 'scripture_detail_screen.dart';
 
@@ -230,6 +231,7 @@ class _ScriptureListScreenState extends State<ScriptureListScreen> {
                               setState(() {});
                             }
                           }
+                          AnalyticsService.logEvent('scripture_open', {'scripture_id': scripture.id});
                           navigator.push(
                             MaterialPageRoute(
                               builder: (context) =>
