@@ -2,7 +2,8 @@
 
 ## Web (public)
 - Push/merge vào `main` → workflow `Deploy to GitHub Pages` tự build `flutter build web` và publish tại https://chant.iamkien.tech.
-- Build thủ công: `flutter build web --release --base-href /`.
+- Build thủ công: `flutter build web --release --base-href / --pwa-strategy=none`.
+- Workflow dùng `--pwa-strategy=none` (không cache offline bằng service worker) để người dùng luôn nhận bản mới ngay sau khi deploy; bản build này cũng tự gỡ service worker cũ còn sót trên trình duyệt. Nếu thấy bản cũ: tải lại cứng (Ctrl/Cmd+Shift+R) hoặc xóa dữ liệu trang một lần.
 
 ## Android (APK)
 - Workflow `Build Release APK` chạy khi push vào `main` hoặc bằng nút *Run workflow* (artifact `release-apk`).

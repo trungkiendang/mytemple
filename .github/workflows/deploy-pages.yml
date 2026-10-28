@@ -30,9 +30,25 @@ jobs:
 
       - name: Build web
         run: >
-          flutter build web --release --base-href /
+          flutter build web --release --base-href / --pwa-strategy=none
           --dart-define=GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
           --dart-define=FIREBASE_WEB_APP_ID=${{ vars.FIREBASE_WEB_APP_ID || '1:609068144093:web:dummy' }}
+
+      # Visitors that already installed an old Flutter service worker would keep seeing the old
+      # app from its cache. This "kill switch" worker replaces it: it clears the caches,
+      # unregisters itself and reloads the open tabs once, so they pick up the new build.
+      - name: Replace service worker with a kill switch
+        run: |
+          cat > build/web/flutter_service_worker.js <<'EOF'
+          self.addEventListener('install', () => self.skipWaiting());
+          self.addEventListener('activate', (event) => {
+            event.waitUntil((async () => {
+              for (const key of await caches.keys()) await caches.delete(key);
+              await self.registration.unregister();
+              for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url);
+            })());
+          });
+          EOF
 
       - run: echo 'chant.iamkien.tech' > build/web/CNAME
 
