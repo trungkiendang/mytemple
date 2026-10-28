@@ -15,10 +15,13 @@ class IncenseFx extends CustomPainter {
   static const orbitTheta = 30.0; // degrees around Y
   static const orbitPhi = 80.0; // degrees from +Y
   static const orbitRadius = 4.9; // metres (leaves head-room for the smoke)
-  static const fovDeg = 30.0; // vertical field of view
+  /// Value given to the O3D widget (`field-of-view`). model-viewer renders it with a smaller
+  /// effective vertical angle, measured with marker spheres at known positions (any aspect ratio).
+  static const fovDeg = 30.0;
+  static const fovEffectiveDeg = 23.3;
   static const target = [0.0, 0.88, 0.0];
 
-  static const ashY = 0.55; // height of the ash surface in the censer model
+  static const ashY = 0.568; // height of the ash mound where the sticks are planted
   static const stickLen = 0.72; // visible length of a fresh stick (m)
   static const lean = 0.18; // radians
 
@@ -92,7 +95,7 @@ class IncenseFx extends CustomPainter {
     final u = _cross(r, f);
     final v = [x - cam[0], y - cam[1], z - cam[2]];
     final depth = _dot(v, f);
-    final tanHalf = math.tan(fovDeg * math.pi / 360);
+    final tanHalf = math.tan(fovEffectiveDeg * math.pi / 360);
     final aspect = size.width / size.height;
     final ndcX = _dot(v, r) / (depth * tanHalf * aspect);
     final ndcY = _dot(v, u) / (depth * tanHalf);
