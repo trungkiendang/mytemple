@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 
+import '../../services/firebase_status.dart';
+
 /// Tap counter for the wooden fish. Counts are persisted locally (Hive `settings`)
 /// and synced to Firestore in small batches when Firebase is reachable.
 class MonkBellProvider with ChangeNotifier {
@@ -46,7 +48,8 @@ class MonkBellProvider with ChangeNotifier {
   }
 
   /// True when Firestore is usable (Firebase initialised and a user is signed in).
-  bool get cloudReady => _firestore != null && FirebaseAuth.instance.currentUser != null;
+  bool get cloudReady =>
+      _firestore != null && FirebaseStatus.issue.value == null && FirebaseAuth.instance.currentUser != null;
 
   void _initFirebase() {
     if (Firebase.apps.isEmpty) return;

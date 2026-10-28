@@ -193,6 +193,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                     ),
                   ),
 
+                if (monkBellProvider.cloudReady)
                 Positioned(
                   top: 20,
                   right: 20,
@@ -209,7 +210,7 @@ class _IncenseScreenState extends State<IncenseScreen>
                         const Icon(Icons.circle, color: Colors.green, size: 8),
                         const SizedBox(width: 8),
                         Text(
-                          '${monkBellProvider.onlineUsersCount} online',
+                          '${monkBellProvider.onlineUsersCount} đang tu tập',
                           style: const TextStyle(
                             color: AppTheme.darkWood,
                             fontSize: 12,

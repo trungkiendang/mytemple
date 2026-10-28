@@ -90,6 +90,7 @@ class _MonkBellScreenState extends State<MonkBellScreen>
       appBar: AppBar(
         title: const Text('Gõ Mõ'),
         actions: [
+          if (context.watch<MonkBellProvider>().cloudReady)
           IconButton(
             tooltip: 'Bảng xếp hạng',
             icon: const Icon(Icons.emoji_events_outlined),
@@ -213,15 +214,17 @@ class _StatsHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _badge('Toàn cầu: ${p.globalTapCount}', Icons.public, AppTheme.antiqueGold),
-            const SizedBox(width: 8),
-            _badge('${p.onlineUsersCount} đang tu tập', Icons.circle, Colors.green, iconSize: 9),
-          ],
-        ),
+        if (p.cloudReady) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _badge('Toàn cầu: ${p.globalTapCount}', Icons.public, AppTheme.antiqueGold),
+              const SizedBox(width: 8),
+              _badge('${p.onlineUsersCount} đang tu tập', Icons.circle, Colors.green, iconSize: 9),
+            ],
+          ),
+        ],
       ],
     );
   }

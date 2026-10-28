@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -121,6 +122,7 @@ class ProfileScreen extends StatelessWidget {
                 isFullWidth: true,
               ),
               const SizedBox(height: 24),
+              if (kDebugMode)
               ValueListenableBuilder<String?>(
                 valueListenable: FirebaseStatus.issue,
                 builder: (context, issue, _) => Container(
@@ -147,15 +149,6 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Settings
-              ListTile(
-                leading: const Icon(Icons.settings, color: AppTheme.darkWood),
-                title: const Text('Cài đặt'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
-              ),
-              const Divider(),
-
               // About Author
               ListTile(
                 leading: const Icon(Icons.info_outline, color: AppTheme.darkWood),
@@ -165,8 +158,10 @@ class ProfileScreen extends StatelessWidget {
               ),
               const Divider(),
 
-              // Login / Logout
-              if (authProvider.isLoggedIn)
+              // Login / Logout (only when Firebase is reachable)
+              if (!authProvider.firebaseReady || FirebaseStatus.issue.value != null)
+                const SizedBox.shrink()
+              else if (authProvider.isLoggedIn)
                 ListTile(
                   leading: const Icon(Icons.logout, color: Colors.red),
                   title: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
@@ -271,48 +266,12 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Về tác giả'),
-        content: const SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: AppTheme.lightWood,
-                child: Icon(Icons.person, size: 50, color: AppTheme.darkWood),
-              ),
-              SizedBox(height: 12),
-              Text(
-                'Trung Kiên Đặng',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.darkWood),
-              ),
-              SizedBox(height: 4),
-              Text('Web Developer', style: TextStyle(color: AppTheme.woodBrown, fontWeight: FontWeight.w500)),
-              SizedBox(height: 16),
-              Text('Nhà phát triển ứng dụng Temple Vibe - Ứng dụng tâm linh giúp kết nối với Phật pháp thông qua công nghệ.',
-                  style: TextStyle(fontSize: 14, height: 1.5)),
-              SizedBox(height: 16),
-              _InfoRow(label: 'Email', value: 'kiendangtrung@live.com'),
-              SizedBox(height: 4),
-              _InfoRow(label: 'Telegram', value: '@trungkiendang'),
-              SizedBox(height: 4),
-              _InfoRow(label: 'Website', value: 'iamkien.tech'),
-              SizedBox(height: 16),
-              Text('Kinh nghiệm:', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkWood)),
-              SizedBox(height: 4),
-              Text('• Giám đốc Trung tâm Quản lý Phần mềm - Viettel\n'
-                  '• Kiến trúc sư giải pháp - TPBank\n'
-                  '• Senior Developer - BTSoftVN\n'
-                  '• Full-stack Developer - VIEGRID',
-                  style: TextStyle(fontSize: 13, height: 1.5)),
-            ],
-          ),
+        content: const Text(
+          'Trung Kiên Đặng',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.darkWood),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đóng')),
         ],
       ),
     );
@@ -355,25 +314,6 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 72,
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.grey)),
-        ),
-        Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
-      ],
     );
   }
 }
